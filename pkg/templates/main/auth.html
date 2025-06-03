@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authentication - ZITOPY Management Solution</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main/auth.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="auth-page-wrapper">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <ul class="flash-messages-container">
+        {% for category, message in messages %}
+        <li class="flash-message flash-{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %} {% endwith %}
+
+      <div class="auth-content-card">
+        <!-- Branding Pane -->
+        <div class="auth-branding-pane">
+          <a href="{{ url_for('main.zms_index') }}" class="branding-logo-link">
+            <i class="fas fa-cubes fa-2x"></i>
+            <h1>ZITOPY</h1>
+          </a>
+          <h2>Management Solution</h2>
+          <p class="branding-tagline">
+            Simplify your business operations. <br />We provide the tools for
+            easy inventory, sales, orders & customer management.
+          </p>
+          <div class="branding-footer">
+            <a href="{{ url_for('main.zms_index') }}" class="home-link-alt"
+              ><i class="fas fa-arrow-left"></i> Back to Home</a
+            >
+          </div>
+        </div>
+
+        <!-- Form Pane -->
+        <div class="auth-form-pane">
+          <div class="auth-modal-header">
+            <button class="tab-button active" data-tab="businessOwnerTab">
+              Business Owner
+            </button>
+            <button class="tab-button" data-tab="clientTab">Client</button>
+          </div>
+
+          <!-- Business Owner Tab Content -->
+          <div id="businessOwnerTab" class="tab-content active">
+            <div class="form-toggle">
+              <button class="form-toggle-button active" data-form="boLogin">
+                Login
+              </button>
+              <button class="form-toggle-button" data-form="boSignup">
+                Sign Up
+              </button>
+            </div>
+
+            <!-- Business Owner Login Form -->
+            <form
+              id="boLoginForm"
+              class="auth-form active"
+              method="POST"
+              action="{{ url_for('main.bo_login_post') }}"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <input
+                type="hidden"
+                name="next"
+                value="{{ request.args.get('next', '') }}"
+              />
+              <h3>Welcome Back, Business Owner!</h3>
+              <p class="form-subtitle">Login to manage your business.</p>
+              <div class="form-group">
+                <label for="boLoginEmail">Email</label>
+                <input
+                  type="email"
+                  id="boLoginEmail"
+                  name="email"
+                  required
+                  aria-label="Business Owner Email for Login"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div class="form-group">
+                <label for="boLoginPassword">Password</label>
+                <div class="password-input-wrapper">
+                  <input
+                    type="password"
+                    id="boLoginPassword"
+                    name="password"
+                    required
+                    aria-label="Business Owner Password for Login"
+                    placeholder="Enter your password"
+                  />
+                  <i
+                    class="fas fa-eye-slash password-toggle-icon"
+                    role="button"
+                    aria-pressed="false"
+                    title="Show password"
+                  ></i>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary auth-submit-button">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </button>
+            </form>
+
+            <!-- Business Owner Signup Form -->
+            <form
+              id="boSignupForm"
+              class="auth-form"
+              method="POST"
+              action="{{ url_for('main.bo_signup_post') }}"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <h3>Create Your Business Account</h3>
+              <p class="form-subtitle">
+                Join ZITOPY and streamline your operations.
+              </p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="boSignupFullName">Full Name</label>
+                  <input
+                    type="text"
+                    id="boSignupFullName"
+                    name="full_name"
+                    required
+                    aria-label="Business Owner Full Name for Signup"
+                    placeholder="e.g., Ada Eze"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="boSignupBusinessName">Business Name</label>
+                  <input
+                    type="text"
+                    id="boSignupBusinessName"
+                    name="business_name"
+                    required
+                    aria-label="Business Name for Signup"
+                    placeholder="e.g., Ada's Glam Nails"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="boSignupBusinessType"
+                  >Business Type / Category</label
+                >
+                <input
+                  type="text"
+                  id="boSignupBusinessType"
+                  name="business_type"
+                  required
+                  aria-label="Business Type or Category for Signup"
+                  placeholder="e.g., Nail Tech, Barber, Spa"
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="boSignupEmail">Business Email</label>
+                  <input
+                    type="email"
+                    id="boSignupEmail"
+                    name="email"
+                    required
+                    aria-label="Business Owner Email for Signup"
+                    placeholder="business@example.com"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="boSignupPhoneNumber"
+                    >Phone Number (WhatsApp enabled)</label
+                  >
+                  <input
+                    type="tel"
+                    id="boSignupPhoneNumber"
+                    name="phone_number"
+                    required
+                    aria-label="Business Phone Number for Signup"
+                    placeholder="+1234567890"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="boSignupCountry">Country</label>
+                  <select
+                    id="boSignupCountry"
+                    name="country"
+                    required
+                    aria-label="Business Country for Signup"
+                  >
+                    <option value="">Select Country</option>
+                    <!-- Countries will be populated by JS -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="boSignupState">State / Province</label>
+                  <select
+                    id="boSignupState"
+                    name="state"
+                    required
+                    aria-label="Business State for Signup"
+                    disabled
+                  >
+                    <option value="">Select State / Province</option>
+                    <!-- States will be populated by JS -->
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="boSignupLGA">Local Government Area (LGA)</label>
+                <select
+                  id="boSignupLGA"
+                  name="lga_province"
+                  aria-label="Business LGA or Province for Signup"
+                  disabled
+                >
+                  <option value="">Select LGA</option>
+                  <!-- LGAs will be populated by JS -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="boSignupFullAddress"
+                  >Full Address (Street/Area)</label
+                >
+                <textarea
+                  id="boSignupFullAddress"
+                  name="full_address"
+                  rows="3"
+                  required
+                  aria-label="Business Full Address for Signup"
+                  placeholder="e.g., 123 Main Street, Garki II"
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="boSignupUsername">Username</label>
+                <input
+                  type="text"
+                  id="boSignupUsername"
+                  name="username"
+                  required
+                  aria-label="Business Owner Username for Signup"
+                  placeholder="Choose a unique username"
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="boSignupPassword">Password</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      type="password"
+                      id="boSignupPassword"
+                      name="password"
+                      required
+                      minlength="8"
+                      aria-label="Business Owner Password for Signup"
+                      placeholder="Min. 8 characters"
+                    />
+                    <i
+                      class="fas fa-eye-slash password-toggle-icon"
+                      role="button"
+                      aria-pressed="false"
+                      title="Show password"
+                    ></i>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="boSignupConfirmPassword">Confirm Password</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      type="password"
+                      id="boSignupConfirmPassword"
+                      name="confirm_password"
+                      required
+                      minlength="8"
+                      aria-label="Confirm Password for Business Owner Signup"
+                      placeholder="Re-enter password"
+                    />
+                    <i
+                      class="fas fa-eye-slash password-toggle-icon"
+                      role="button"
+                      aria-pressed="false"
+                      title="Show password"
+                    ></i>
+                  </div>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary auth-submit-button">
+                <i class="fas fa-user-plus"></i> Create Account
+              </button>
+            </form>
+          </div>
+
+          <!-- Client Tab Content -->
+          <div id="clientTab" class="tab-content">
+            <div class="form-toggle">
+              <button class="form-toggle-button active" data-form="clientLogin">
+                Login
+              </button>
+              <button class="form-toggle-button" data-form="clientSignup">
+                Sign Up
+              </button>
+            </div>
+
+            <!-- Client Login Form -->
+            <form
+              id="clientLoginForm"
+              class="auth-form active"
+              method="POST"
+              action="{{ url_for('main.client_login_post') }}"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <input
+                type="hidden"
+                name="next"
+                value="{{ request.args.get('next', '') }}"
+              />
+              <h3>Welcome Back, Client!</h3>
+              <p class="form-subtitle">Login to book your appointments.</p>
+              <div class="form-group">
+                <label for="clientLoginEmail">Email</label>
+                <input
+                  type="email"
+                  id="clientLoginEmail"
+                  name="email"
+                  required
+                  aria-label="Client Email for Login"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div class="form-group">
+                <label for="clientLoginPassword">Password</label>
+                <div class="password-input-wrapper">
+                  <input
+                    type="password"
+                    id="clientLoginPassword"
+                    name="password"
+                    required
+                    aria-label="Client Password for Login"
+                    placeholder="Enter your password"
+                  />
+                  <i
+                    class="fas fa-eye-slash password-toggle-icon"
+                    role="button"
+                    aria-pressed="false"
+                    title="Show password"
+                  ></i>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary auth-submit-button">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </button>
+            </form>
+
+            <!-- Client Signup Form -->
+            <form
+              id="clientSignupForm"
+              class="auth-form"
+              method="POST"
+              action="{{ url_for('main.client_signup_post') }}"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <h3>Create Your Client Account</h3>
+              <p class="form-subtitle">Sign up to easily book services.</p>
+              <div class="form-group">
+                <label for="clientSignupFullName">Full Name</label>
+                <input
+                  type="text"
+                  id="clientSignupFullName"
+                  name="full_name"
+                  required
+                  aria-label="Client Full Name for Signup"
+                  placeholder="e.g., John Doe"
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="clientSignupEmail">Email Address</label>
+                  <input
+                    type="email"
+                    id="clientSignupEmail"
+                    name="email"
+                    required
+                    aria-label="Client Email for Signup"
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="clientSignupPhoneNumber">Phone Number</label>
+                  <input
+                    type="tel"
+                    id="clientSignupPhoneNumber"
+                    name="phone_number"
+                    required
+                    aria-label="Client Phone Number for Signup"
+                    placeholder="+1234567890"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="clientSignupGender">Gender (Optional)</label>
+                <select
+                  id="clientSignupGender"
+                  name="gender"
+                  aria-label="Client Gender for Signup"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="clientSignupCountry">Country</label>
+                  <select
+                    id="clientSignupCountry"
+                    name="country"
+                    required
+                    aria-label="Client Country for Signup"
+                  >
+                    <option value="">Select Country</option>
+                    <!-- Countries will be populated by JS -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="clientSignupState">State / Province</label>
+                  <select
+                    id="clientSignupState"
+                    name="state"
+                    required
+                    aria-label="Client State for Signup"
+                    disabled
+                  >
+                    <option value="">Select State / Province</option>
+                    <!-- States will be populated by JS -->
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="clientSignupLGA"
+                  >Local Government Area (LGA) / City</label
+                >
+                <select
+                  id="clientSignupLGA"
+                  name="lga_area"
+                  aria-label="Client LGA or City for Signup"
+                  disabled
+                >
+                  <option value="">Select LGA / City</option>
+                  <!-- LGAs/Cities will be populated by JS -->
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="clientSignupPassword">Password</label>
+                  <div class="password-input-wrapper">
+                    <input
+                      type="password"
+                      id="clientSignupPassword"
+                      name="password"
+                      required
+                      minlength="8"
+                      aria-label="Client Password for Signup"
+                      placeholder="Min. 8 characters"
+                    />
+                    <i
+                      class="fas fa-eye-slash password-toggle-icon"
+                      role="button"
+                      aria-pressed="false"
+                      title="Show password"
+                    ></i>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="clientSignupConfirmPassword"
+                    >Confirm Password</label
+                  >
+                  <div class="password-input-wrapper">
+                    <input
+                      type="password"
+                      id="clientSignupConfirmPassword"
+                      name="confirm_password"
+                      required
+                      minlength="8"
+                      aria-label="Confirm Password for Client Signup"
+                      placeholder="Re-enter password"
+                    />
+                    <i
+                      class="fas fa-eye-slash password-toggle-icon"
+                      role="button"
+                      aria-pressed="false"
+                      title="Show password"
+                    ></i>
+                  </div>
+                </div>
+              </div>
+              <button type="submit" class="btn-primary auth-submit-button">
+                <i class="fas fa-user-plus"></i> Create Account
+              </button>
+            </form>
+          </div>
+          <p class="auth-pane-footer-note">
+            © <span id="currentYear"></span> ZITOPY. All rights reserved.
+          </p>
+        </div>
+        <!-- End Form Pane -->
+      </div>
+      <!-- End Auth Content Card -->
+    </div>
+    <!-- End Auth Page Wrapper -->
+    <script src="{{ url_for('static', filename='js/main/auth.js') }}"></script>
+  </body>
+</html>
