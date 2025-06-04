@@ -1,0 +1,21 @@
+{% if date_overrides %} {% for override in date_overrides %}
+<li data-id="{{ override.id }}">
+  <span>
+    <strong>{{ override.specific_date.strftime('%Y-%m-%d (%a)') }}:</strong>
+    {% if override.slot_type == 'blocked_override' %} Unavailable all day {%
+    else %} {{ override.start_time.strftime('%H:%M') }} - {{
+    override.end_time.strftime('%H:%M') }} ({{ override.slot_type | title }}) {%
+    endif %}
+  </span>
+  <button
+    type="button"
+    class="btn btn-sm btn-danger delete-availability-btn"
+    data-id="{{ override.id }}"
+    title="Delete Override"
+  >
+    <i class="fas fa-trash-alt"></i>
+  </button>
+</li>
+{% endfor %} {% else %}
+<p id="noOverridesMessage">No specific date overrides found.</p>
+{% endif %}

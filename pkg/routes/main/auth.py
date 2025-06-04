@@ -1,18 +1,32 @@
 from flask import render_template, request, redirect, url_for, flash, session
 from functools import wraps
 from . import main_bp
-from pkg.models import db, BusinessOwner, Client
+from pkg.models import db, BusinessOwner, Client # Assuming 'pkg' is your root package for models
 
-# --- Login Required Decorator ---
+# --- Login Required Decorator (Generic) ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session or 'user_type' not in session:
             flash('You need to be logged in to access this page.', 'warning')
-            # Redirect to the main auth page, passing the intended destination
             return redirect(url_for('main.auth_page_get', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
+
+# --- Business Owner Required Decorator ---
+def business_owner_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session: # Check if user is logged in at all
+            flash('You need to be logged in to access this page.', 'warning')
+            return redirect(url_for('main.auth_page_get', tab='businessOwnerTab', form='login', next=request.url))
+        if session.get('user_type') != 'business_owner': # Check if user is a business owner
+            flash('Access denied. This page is for Business Owners only.', 'danger')
+            # Redirect to BO login, in case they want to switch accounts or were misdirected
+            return redirect(url_for('main.auth_page_get', tab='businessOwnerTab', form='login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 # --- Page Rendering ---
 @main_bp.route('/auth', methods=['GET'])
@@ -101,7 +115,8 @@ def bo_login_post():
             flash('Login successful!', 'success')
             if next_url:
                 return redirect(next_url)
-            return redirect(url_for('main.zms_index')) # Placeholder redirect to a dashboard
+            # Redirect business owners to their dashboard
+            return redirect(url_for('business.dashboard'))
         else:
             flash('Invalid email or password.', 'error')
             return redirect(url_for('main.auth_page_get', tab='businessOwnerTab', form='login', next=next_url or ''))

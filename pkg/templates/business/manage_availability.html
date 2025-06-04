@@ -1,0 +1,162 @@
+{% extends "business/dashboard.html" %}
+
+{% block extra_style %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/business/manage_availability.css') }}">
+{% endblock %}
+
+{% block page_title %}Manage Availability{% endblock %}
+
+{% block page_content %}
+<section id="availability-management" class="content-section active">
+  <div class="section-header" style="border-bottom: 1px solid var(--border-color-light); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+    <h2>Set Your Working Hours & Overrides</h2>
+    <p>Define your regular weekly schedule and add specific date overrides for holidays or special hours.</p>
+  </div>
+
+  <div class="availability-sections">
+    <!-- Weekly Schedule Section -->
+    <div id="weeklyScheduleSection" class="availability-section">
+      <h3>Recurring Weekly Schedule</h3>
+      <form id="weeklyScheduleForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+        {% set days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
+        {% for i in range(7) %}
+        <div class="day-schedule" data-day-index="{{ i }}">
+          <div class="day-header">
+            <h4>{{ days[i] }}</h4>
+            <div class="form-group form-group-checkbox">
+              <input type="checkbox" id="closed_{{ i }}" name="days[{{ i }}][is_closed]"
+                     {% if weekly_availability[i] and weekly_availability[i].is_closed %}checked{% endif %}>
+              <label for="closed_{{ i }}">Closed all day</label>
+            </div>
+          </div>
+          <div class="time-slots-container" id="slots_container_{{ i }}">
+            {% if weekly_availability[i] and not weekly_availability[i].is_closed %}
+              {% for slot in weekly_availability[i].slots %}
+              <div class="time-slot">
+                <input type="hidden" name="days[{{ i }}][slots][{{ loop.index0 }}][id]" value="{{ slot.id if slot.id else '' }}">
+                <div class="form-group">
+                  <label for="start_time_{{ i }}_{{ loop.index0 }}">Start Time</label>
+                  <input type="time" id="start_time_{{ i }}_{{ loop.index0 }}" name="days[{{ i }}][slots][{{ loop.index0 }}][start_time]" value="{{ slot.start_time }}" required step="900">
+                </div>
+                <div class="form-group">
+                  <label for="end_time_{{ i }}_{{ loop.index0 }}">End Time</label>
+                  <input type="time" id="end_time_{{ i }}_{{ loop.index0 }}" name="days[{{ i }}][slots][{{ loop.index0 }}][end_time]" value="{{ slot.end_time }}" required step="900">
+                </div>
+                <div class="form-group">
+                  <label for="slot_type_{{ i }}_{{ loop.index0 }}">Type</label>
+                  <select id="slot_type_{{ i }}_{{ loop.index0 }}" name="days[{{ i }}][slots][{{ loop.index0 }}][slot_type]">
+                    <option value="available" {% if slot.slot_type == 'available' %}selected{% endif %}>Available</option>
+                    <option value="break" {% if slot.slot_type == 'break' %}selected{% endif %}>Break</option>
+                  </select>
+                </div>
+                <button type="button" class="remove-slot-btn" title="Remove slot"><i class="fas fa-times-circle"></i></button>
+              </div>
+              {% endfor %}
+            {% elif not weekly_availability[i] or not weekly_availability[i].is_closed %}
+              <!-- Default empty slot if day is not closed and no slots exist -->
+              <div class="time-slot">
+                <input type="hidden" name="days[{{ i }}][slots][0][id]" value="">
+                <div class="form-group">
+                  <label for="start_time_{{ i }}_0">Start Time</label>
+                  <input type="time" id="start_time_{{ i }}_0" name="days[{{ i }}][slots][0][start_time]" value="09:00" required step="900">
+                </div>
+                <div class="form-group">
+                  <label for="end_time_{{ i }}_0">End Time</label>
+                  <input type="time" id="end_time_{{ i }}_0" name="days[{{ i }}][slots][0][end_time]" value="17:00" required step="900">
+                </div>
+                <div class="form-group">
+                  <label for="slot_type_{{ i }}_0">Type</label>
+                  <select id="slot_type_{{ i }}_0" name="days[{{ i }}][slots][0][slot_type]">
+                    <option value="available" selected>Available</option>
+                    <option value="break">Break</option>
+                  </select>
+                </div>
+                <button type="button" class="remove-slot-btn" title="Remove slot"><i class="fas fa-times-circle"></i></button>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary add-slot-btn" data-day-index="{{ i }}">
+            <i class="fas fa-plus-circle"></i> Add Time Slot
+          </button>
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Weekly Schedule</button>
+        </div>
+        <div id="weeklyStatus" class="form-message" style="display: none;"></div>
+      </form>
+    </div>
+
+    <!-- Date Overrides Section -->
+    <div id="dateOverridesSection" class="availability-section">
+      <h3>Date Overrides & Special Hours</h3>
+      <form id="dateOverrideForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="overrideDate">Select Date <span class="required-asterisk">*</span></label>
+            <input type="date" id="overrideDate" name="override_date" required>
+          </div>
+          <div class="form-group">
+            <label for="overrideType">Availability Type <span class="required-asterisk">*</span></label>
+            <select id="overrideType" name="override_type">
+              <option value="available">Set Custom Hours</option>
+              <option value="blocked_override">Mark as Unavailable</option>
+            </select>
+          </div>
+        </div>
+        <div id="overrideSlotsContainer" class="time-slots-container" style="margin-left:0; margin-top:1rem;">
+          <!-- JS will populate this if 'available' is selected -->
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Add/Update Override</button>
+        </div>
+        <div id="overrideStatus" class="form-message" style="display: none;"></div>
+      </form>
+
+      <div class="availability-summary" style="margin-top: 2rem;">
+        <h4>Existing Date Overrides:</h4>
+        <ul id="existingOverridesList">
+          {% if date_overrides %}
+            {% for override in date_overrides %}
+            <li data-id="{{ override.id }}">
+              <span>
+                <strong>{{ override.specific_date.strftime('%Y-%m-%d (%a)') }}:</strong>
+                {% if override.slot_type == 'blocked_override' %}
+                  Unavailable all day
+                {% else %}
+                  {{ override.start_time.strftime('%H:%M') }} - {{ override.end_time.strftime('%H:%M') }} ({{ override.slot_type | title }})
+                {% endif %}
+              </span>
+              <button type="button" class="btn btn-sm btn-danger delete-availability-btn" data-id="{{ override.id }}" title="Delete Override">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </li>
+            {% endfor %}
+          {% else %}
+            <p id="noOverridesMessage">No specific date overrides found.</p>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+{{ super() }}
+<script>
+  // URLs for AJAX
+  const saveWeeklyUrl = "{{ url_for('business.save_weekly_availability') }}";
+  const saveOverrideUrl = "{{ url_for('business.save_date_override_availability') }}";
+  const deleteAvailabilityUrlBase = "{{ url_for('business.bookings_overview') }}".replace('/bookings', '/availability/delete'); //  Construct base path
+
+  // Initial data if needed, e.g., for min date on overrideDate
+  const todayISO = new Date().toISOString().split('T')[0];
+  document.getElementById('overrideDate').setAttribute('min', todayISO);
+  document.getElementById('overrideDate').value = todayISO;
+
+</script>
+<script src="{{ url_for('static', filename='js/business/manage_availability.js') }}"></script>
+{% endblock %}

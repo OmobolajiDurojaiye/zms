@@ -1,0 +1,26 @@
+{% extends "business/dashboard.html" %} {% block page_title %}Customer
+Management{% endblock %} {% block header_quick_actions %}
+<button class="btn btn-primary">
+  <i class="fas fa-user-plus"></i>
+  Add Customer
+</button>
+{% endblock %} {% block page_content %}
+<section id="customers" class="content-section active">
+  <div class="placeholder-content">
+    <i class="fas fa-users placeholder-icon"></i>
+    <h3>Manage Your Customers</h3>
+    <p>
+      Customer profiles, history, and communication tools will be available
+      here. This content is from customers.html.
+    </p>
+    <button class="btn btn-secondary">
+      <i class="fas fa-info-circle"></i> Learn More
+    </button>
+  </div>
+</section>
+{% endblock %} {% block page_scripts %} {{ super() }}
+<!-- <script src="{{ url_for('static', filename='js/business/customers.js') }}"></script> -->
+<script>
+  console.log("Customers page specific JS loaded.");
+</script>
+{% endblock %}

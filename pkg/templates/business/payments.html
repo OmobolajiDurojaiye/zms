@@ -1,0 +1,26 @@
+{% extends "business/dashboard.html" %} {% block page_title %}Payment
+Processing{% endblock %} {% block header_quick_actions %}
+<button class="btn btn-primary">
+  <i class="fas fa-credit-card"></i>
+  Record Payment
+</button>
+{% endblock %} {% block page_content %}
+<section id="payments" class="content-section active">
+  <div class="placeholder-content">
+    <i class="fas fa-money-check-alt placeholder-icon"></i>
+    <h3>Streamline Your Payments</h3>
+    <p>
+      Manage transactions, view payment history, and integrate payment gateways
+      here. This content is from payments.html.
+    </p>
+    <button class="btn btn-secondary">
+      <i class="fas fa-university"></i> Link Bank Account
+    </button>
+  </div>
+</section>
+{% endblock %} {% block page_scripts %} {{ super() }}
+<!-- <script src="{{ url_for('static', filename='js/business/payments.js') }}"></script> -->
+<script>
+  console.log("Payments page specific JS loaded.");
+</script>
+{% endblock %}

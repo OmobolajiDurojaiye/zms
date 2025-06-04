@@ -1,0 +1,233 @@
+{% extends "business/dashboard.html" %} {% block extra_style %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/business/booking.css') }}"
+/>
+{% endblock extra_style %} {% block page_title %}Booking Management{% endblock
+%} {% block header_quick_actions %}
+<div class="booking-filters">
+  <select
+    id="bookingDateFilter"
+    class="filter-select"
+    aria-label="Filter bookings by date"
+  >
+    <option value="today" selected>Today</option>
+    <option value="tomorrow">Tomorrow</option>
+    <option value="this_week">This Week</option>
+    <option value="all_upcoming">All Upcoming</option>
+  </select>
+  <button class="btn btn-primary" id="newBookingBtn">
+    <i class="fas fa-calendar-plus"></i>
+    New Booking
+  </button>
+  <a
+    href="{{ url_for('business.manage_availability') }}"
+    class="btn btn-secondary"
+  >
+    <i class="fas fa-business-time"></i>
+    Set Availability
+  </a>
+</div>
+{% endblock %} {% block page_content %}
+<section id="bookings" class="content-section active">
+  <div class="bookings-layout">
+    <div class="booking-calendar-container card-style">
+      <h3 id="calendarHeader" class="card-header-style">
+        <span id="calendarMonthYear"
+          >{{ current_calendar_month_name }} {{ current_calendar_year_val
+          }}</span
+        >
+        <span class="calendar-controls">
+          <button
+            id="prevMonthBtn"
+            class="calendar-nav-btn"
+            aria-label="Previous Month"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button id="todayBtn" class="calendar-nav-btn" aria-label="Today">
+            Today
+          </button>
+          <button
+            id="nextMonthBtn"
+            class="calendar-nav-btn"
+            aria-label="Next Month"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </span>
+      </h3>
+      <div id="calendarView" class="calendar-grid">
+        <!-- Calendar will be rendered here by FullCalendar.io -->
+      </div>
+    </div>
+
+    <div class="upcoming-appointments-container card-style">
+      <h3 id="appointmentsListTitle" class="card-header-style">
+        Today's Appointments
+      </h3>
+      <div id="appointmentList" class="appointment-list">
+        {% if todays_bookings %} {% for booking in todays_bookings %}
+        <div class="appointment-item" data-booking-id="{{ booking.id }}">
+          <div class="appointment-time">
+            {{ booking.start_datetime.strftime('%I:%M %p') }}
+          </div>
+          <div class="appointment-details">
+            <h4>{{ booking.client_display_name }}</h4>
+            <p>Service: {{ booking.service.name }}</p>
+            <span
+              class="appointment-status status-{{ booking.status | lower | replace('_', '-') }}"
+              >{{ booking.status | replace('_', ' ') | title }}</span
+            >
+          </div>
+          <div class="appointment-actions">
+            <button
+              class="btn-icon btn-contact-client"
+              aria-label="Contact Client"
+              title="Contact Client ({{ booking.guest_phone_number or (booking.client.phone_number if booking.client else 'N/A') }})"
+              data-phone="{{ booking.guest_phone_number or (booking.client.phone_number if booking.client else '') }}"
+              data-email="{{ booking.guest_email or (booking.client.email if booking.client else '') }}"
+            >
+              <i class="fas fa-phone"></i>
+            </button>
+            <button
+              class="btn-icon btn-edit-booking"
+              aria-label="Edit Booking"
+              title="Edit Booking"
+              data-booking-id="{{ booking.id }}"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="btn-icon btn-cancel-booking btn-icon-danger"
+              aria-label="Cancel Booking"
+              title="Cancel Booking"
+              data-booking-id="{{ booking.id }}"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <p class="no-appointments">No appointments scheduled for today.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- New Booking Modal -->
+<div id="newBookingModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" id="closeNewBookingModal" title="Close">×</span>
+    <h2>Create New Booking</h2>
+    <form id="newBookingForm">
+      {# CSRF Token: Ensure csrf_token() is available in context if using
+      Flask-WTF globally #}
+      <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() if csrf_token else '' }}"
+      />
+      <div class="form-row">
+        <div class="form-group">
+          <label for="guestFullName"
+            >Client Full Name <span class="required-asterisk">*</span></label
+          >
+          <input
+            type="text"
+            id="guestFullName"
+            name="guest_full_name"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="serviceId"
+            >Service <span class="required-asterisk">*</span></label
+          >
+          <select id="serviceId" name="service_id" required>
+            <option value="">Select a service</option>
+            {% for service in services %}
+            <option
+              value="{{ service.id }}"
+              data-duration="{{ service.duration_minutes }}"
+            >
+              {{ service.name }} ({{ service.duration_minutes }} min) - ₦{{
+              "{:,.2f}".format(service.price) }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="guestEmail">Client Email</label>
+          <input type="email" id="guestEmail" name="guest_email" />
+        </div>
+        <div class="form-group">
+          <label for="guestPhoneNumber">Client Phone Number</label>
+          <input type="tel" id="guestPhoneNumber" name="guest_phone_number" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bookingDate"
+            >Date <span class="required-asterisk">*</span></label
+          >
+          <input type="date" id="bookingDate" name="booking_date" required />
+        </div>
+        <div class="form-group">
+          <label for="bookingTime"
+            >Time <span class="required-asterisk">*</span></label
+          >
+          <input
+            type="time"
+            id="bookingTime"
+            name="booking_time"
+            step="900"
+            required
+          />
+          <!-- step 900 = 15 min intervals -->
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="notesOwner">Notes (for owner)</label>
+        <textarea id="notesOwner" name="notes_owner" rows="3"></textarea>
+      </div>
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="cancelNewBookingModal"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Create Booking</button>
+      </div>
+      <div
+        id="newBookingError"
+        class="form-error-message"
+        style="display: none"
+      ></div>
+    </form>
+  </div>
+</div>
+
+<!-- Placeholder for Edit Booking Modal (similar structure to New Booking Modal) -->
+<!-- <div id="editBookingModal" class="modal"> ... </div> -->
+
+{% endblock %} {% block page_scripts %} {{ super() }}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<!-- Day.js for date manipulation -->
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script>
+  // Pass URLs and initial data from Flask to JS
+  var createBookingUrl = "{{ url_for('business.create_booking') }}";
+  var getCalendarBookingsUrl =
+    "{{ url_for('business.get_calendar_bookings_data') }}";
+  var cancelBookingBaseUrl = "{{ url_for('business.bookings_overview') }}"; // Base path, JS will append /<id>/cancel
+  var initialTodayISO = "{{ today_date_iso }}"; // Passed from Python route
+</script>
+<script src="{{ url_for('static', filename='js/business/booking.js') }}"></script>
+{% endblock %}

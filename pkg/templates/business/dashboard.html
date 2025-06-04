@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Dashboard - ZITOPY Management Solution</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/business/dashboard.css') }}"
+    />
+    {% block extra_style %} {% endblock extra_style %}
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <ul class="flash-messages-container">
+      {% for category, message in messages %}
+      <li class="flash-message flash-{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %} {% endwith %}
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">Z</div>
+          <span class="logo-text">ZITOPY</span>
+        </div>
+        <button
+          class="sidebar-toggle"
+          id="sidebarToggle"
+          aria-label="Toggle Sidebar"
+        >
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a
+          href="{{ url_for('business.dashboard') }}"
+          class="nav-item {% if request.endpoint == 'business.dashboard' %}active{% endif %}"
+          data-section="dashboard"
+        >
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+        <a
+          href="{{ url_for('business.bookings_overview') }}"
+          class="nav-item {% if request.endpoint == 'bookings_overview' %}active{% endif %}"
+          data-section="bookings"
+        >
+          <i class="fas fa-calendar-alt"></i>
+          <span>Bookings</span>
+        </a>
+        <a
+          href="{{ url_for('business.inventory') }}"
+          class="nav-item {% if request.endpoint == 'business.inventory' %}active{% endif %}"
+          data-section="inventory"
+        >
+          <i class="fas fa-boxes"></i>
+          <span>Inventory</span>
+        </a>
+
+        <a
+          href="{{ url_for('business.customers') }}"
+          class="nav-item {% if request.endpoint == 'business.customers' %}active{% endif %}"
+          data-section="customers"
+        >
+          <i class="fas fa-users"></i>
+          <span>Customers</span>
+        </a>
+        <a
+          href="{{ url_for('business.analytics') }}"
+          class="nav-item {% if request.endpoint == 'business.analytics' %}active{% endif %}"
+          data-section="analytics"
+        >
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a
+          href="{{ url_for('business.payments') }}"
+          class="nav-item {% if request.endpoint == 'business.payments' %}active{% endif %}"
+          data-section="payments"
+        >
+          <i class="fas fa-credit-card"></i>
+          <span>Payments</span>
+        </a>
+        <a
+          href="{{ url_for('business.settings') }}"
+          class="nav-item {% if request.endpoint == 'business.settings' %}active{% endif %}"
+          data-section="settings"
+        >
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="user-info">
+            <span class="user-name"
+              >{{ current_business_owner.full_name if current_business_owner
+              else 'Business Owner' | e }}</span
+            >
+            <span class="user-role"
+              >{{ current_business_owner.business_type if current_business_owner
+              else 'Business Owner' | e }}</span
+            >
+          </div>
+        </div>
+        <a href="/logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <!-- Header -->
+      <header class="main-header">
+        <div class="header-content">
+          <h1 class="page-title" id="pageTitle">
+            {% block page_title %}{{ page_title | default('Dashboard Overview')
+            }}{% endblock %}
+          </h1>
+          <div class="header-actions">
+            <button class="notification-btn" aria-label="View Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="notification-badge">3</span>
+              <!-- Placeholder -->
+            </button>
+            <div class="quick-actions">
+              {% block header_quick_actions %}
+              <button class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Quick Add
+              </button>
+              {% endblock %}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {% block page_content %}
+      <!-- Default content for dashboard overview -->
+      <section id="dashboard" class="content-section active">
+        <!-- Business Owner Information Card -->
+        {% if current_business_owner %}
+        <div class="business-info-card">
+          <div class="business-header">
+            <div class="business-avatar">
+              <i class="fas fa-store"></i>
+            </div>
+            <div class="business-details">
+              <h2>{{ current_business_owner.business_name | e }}</h2>
+              <p class="business-type">
+                {{ current_business_owner.business_type | e }}
+              </p>
+              <p class="business-owner">
+                Owned by {{ current_business_owner.full_name | e }}
+              </p>
+            </div>
+          </div>
+          <div class="business-contact-info">
+            <div class="contact-item">
+              <i class="fas fa-envelope"></i>
+              <span>{{ current_business_owner.email | e }}</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>{{ current_business_owner.phone_number | e }}</span>
+            </div>
+            <div class="contact-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <span
+                >{{ current_business_owner.state | e }}, {{
+                current_business_owner.country | e }}</span
+              >
+            </div>
+            {% if current_business_owner.lga_province %}
+            <div class="contact-item">
+              <i class="fas fa-location-dot"></i>
+              <span>{{ current_business_owner.lga_province | e }}</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="business-stats-mini">
+            <div class="mini-stat">
+              <span class="mini-stat-label">Member Since</span>
+              <span class="mini-stat-value"
+                >{{ current_business_owner.created_at.strftime('%B %Y') }}</span
+              >
+            </div>
+            <div class="mini-stat">
+              <span class="mini-stat-label">Username</span>
+              <span class="mini-stat-value"
+                >@{{ current_business_owner.username | e }}</span
+              >
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon revenue">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-content">
+              <h3>Total Revenue</h3>
+              <div class="stat-value">
+                ₦{{ "{:,}".format(stats.total_revenue.value) }}
+              </div>
+              <div class="stat-change {{ stats.total_revenue.change_type }}">
+                {{ '+' if stats.total_revenue.change >= 0 else '' }}{{
+                stats.total_revenue.change }}% from last month
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon bookings">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+              <h3>Total Bookings</h3>
+              <div class="stat-value">{{ stats.total_bookings.value }}</div>
+              <div class="stat-change {{ stats.total_bookings.change_type }}">
+                {{ '+' if stats.total_bookings.change >= 0 else '' }}{{
+                stats.total_bookings.change }}% from last month
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon customers">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+              <h3>Active Customers</h3>
+              <div class="stat-value">{{ stats.active_customers.value }}</div>
+              <div class="stat-change {{ stats.active_customers.change_type }}">
+                {{ '+' if stats.active_customers.change >= 0 else '' }}{{
+                stats.active_customers.change }}% from last month
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon inventory">
+              <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-content">
+              <h3>Low Stock Items</h3>
+              <div class="stat-value">{{ stats.low_stock_items.value }}</div>
+              <div class="stat-change {{ stats.low_stock_items.change_type }}">
+                {{ stats.low_stock_items.change_text }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts and Recent Activity -->
+        <div class="dashboard-grid">
+          <div class="chart-container">
+            <h3>Revenue Trend</h3>
+            <div class="chart-placeholder">
+              <!-- Canvas for chart removed, placeholder is now empty or can contain a message -->
+              <!-- e.g., <p>Chart data will be available soon.</p> -->
+            </div>
+          </div>
+
+          <div class="recent-activity">
+            <h3>Recent Activity</h3>
+            <div class="activity-list">
+              {% if recent_activities %} {% for activity in recent_activities %}
+              <div class="activity-item">
+                <div class="activity-icon">
+                  <i class="{{ activity.icon }}"></i>
+                </div>
+                <div class="activity-content">
+                  <p>{{ activity.text | safe }}</p>
+                  <span class="activity-time">{{ activity.time_ago }}</span>
+                </div>
+              </div>
+              {% endfor %} {% else %}
+              <p>No recent activity to display.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions-grid">
+          <div class="quick-action-card">
+            <i class="fas fa-plus-circle"></i>
+            <h4>Add New Service</h4>
+            <p>Create a new service offering for your clients.</p>
+          </div>
+          <div class="quick-action-card">
+            <i class="fas fa-calendar-plus"></i>
+            <h4>Set Availability</h4>
+            <p>Manage and update your business operating hours.</p>
+          </div>
+          <div class="quick-action-card">
+            <i class="fas fa-box-open"></i>
+            <h4>Add Inventory Item</h4>
+            <p>Quickly stock new products into your inventory.</p>
+          </div>
+          <div class="quick-action-card">
+            <i class="fas fa-chart-bar"></i>
+            <h4>View Reports</h4>
+            <p>Access detailed analytics and business insights.</p>
+          </div>
+        </div>
+      </section>
+      {% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/business/dashboard.js') }}"></script>
+    {% block page_scripts %}
+    <!-- Chart.js CDN and script removed -->
+    {% endblock %}
+
+    <style>
+      /* Additional CSS for Business Info Card */
+      .business-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .business-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .business-avatar {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+      }
+
+      .business-details h2 {
+        margin: 0 0 4px 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .business-type {
+        margin: 0 0 4px 0;
+        opacity: 0.9;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .business-owner {
+        margin: 0;
+        opacity: 0.8;
+        font-size: 13px;
+      }
+
+      .business-contact-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .contact-item i {
+        width: 16px;
+        text-align: center;
+      }
+
+      .business-stats-mini {
+        display: flex;
+        gap: 32px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .mini-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .mini-stat-label {
+        font-size: 12px;
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .mini-stat-value {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      @media (max-width: 768px) {
+        .business-header {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .business-contact-info {
+          grid-template-columns: 1fr;
+        }
+
+        .business-stats-mini {
+          justify-content: center;
+        }
+      }
+    </style>
+  </body>
+</html>

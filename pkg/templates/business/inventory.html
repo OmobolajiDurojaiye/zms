@@ -1,0 +1,144 @@
+{% extends "business/dashboard.html" %} {% block page_title %}Inventory
+Management{% endblock %} {% block header_quick_actions %}
+<button class="btn btn-primary">
+  <i class="fas fa-plus"></i>
+  Add Product
+</button>
+{% endblock %} {% block page_content %}
+<section id="inventory" class="content-section active">
+  <!-- Inventory Stats Grid -->
+  <div class="inventory-stats-grid">
+    <div class="inventory-stat-card">
+      <span class="stat-number">156</span>
+      <span class="stat-label">Total Items</span>
+    </div>
+    <div class="inventory-stat-card">
+      <span class="stat-number low-stock-indicator">12</span>
+      <span class="stat-label">Low Stock Items</span>
+    </div>
+    <div class="inventory-stat-card">
+      <span class="stat-number">₦85,400</span>
+      <span class="stat-label">Total Inventory Value</span>
+    </div>
+  </div>
+
+  <!-- Inventory Table -->
+  <div class="table-container">
+    <div class="table-toolbar">
+      <input
+        type="search"
+        placeholder="Search products..."
+        class="table-search-input"
+      />
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Stock</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="product-info">
+              <img
+                src="https://via.placeholder.com/40x40/0047a5/ffffff?Text=P1"
+                alt="Product Image"
+                class="product-image"
+              />
+              <span>Gel Nail Polish - Red</span>
+            </div>
+          </td>
+          <td>Nail Polish</td>
+          <td><span class="stock-value low">5</span></td>
+          <td>₦2,500</td>
+          <td>
+            <span class="status-badge status-low-stock">Low Stock</span>
+          </td>
+          <td>
+            <button class="btn-icon" aria-label="Edit Product">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="btn-icon btn-icon-danger"
+              aria-label="Delete Product"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="product-info">
+              <img
+                src="https://via.placeholder.com/40x40/0047a5/ffffff?Text=P2"
+                alt="Product Image"
+                class="product-image"
+              />
+              <span>Acrylic Powder - Clear</span>
+            </div>
+          </td>
+          <td>Acrylics</td>
+          <td><span class="stock-value good">25</span></td>
+          <td>₦4,200</td>
+          <td>
+            <span class="status-badge status-in-stock">In Stock</span>
+          </td>
+          <td>
+            <button class="btn-icon" aria-label="Edit Product">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="btn-icon btn-icon-danger"
+              aria-label="Delete Product"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="product-info">
+              <img
+                src="https://via.placeholder.com/40x40/0047a5/ffffff?Text=P3"
+                alt="Product Image"
+                class="product-image"
+              />
+              <span>Nail Buffer Set</span>
+            </div>
+          </td>
+          <td>Tools</td>
+          <td><span class="stock-value good">50</span></td>
+          <td>₦1,500</td>
+          <td>
+            <span class="status-badge status-in-stock">In Stock</span>
+          </td>
+          <td>
+            <button class="btn-icon" aria-label="Edit Product">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button
+              class="btn-icon btn-icon-danger"
+              aria-label="Delete Product"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %} {% block page_scripts %} {{ super() }} {# Optional: To include
+scripts from parent block if any specific to dashboard base #}
+<!-- <script src="{{ url_for('static', filename='js/business/inventory.js') }}"></script> -->
+<script>
+  console.log("Inventory page specific JS loaded.");
+  // Add inventory specific JS here
+</script>
+{% endblock %}

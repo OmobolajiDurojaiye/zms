@@ -4,7 +4,7 @@ from pkg.models import db, Waitlist
 
 @main_bp.route('/')
 def zms_index():
-    return render_template('main/under_maintainance.html')
+    return render_template('main/home.html')
 
 @main_bp.route('/join-waitlist', methods=['POST'])
 def join_waitlist():

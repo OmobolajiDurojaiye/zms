@@ -1,0 +1,26 @@
+{% extends "business/dashboard.html" %} {% block page_title %}Performance
+Analytics{% endblock %} {% block header_quick_actions %}
+<button class="btn btn-secondary">
+  <i class="fas fa-file-export"></i>
+  Export Report
+</button>
+{% endblock %} {% block page_content %}
+<section id="analytics" class="content-section active">
+  <div class="placeholder-content">
+    <i class="fas fa-chart-line placeholder-icon"></i>
+    <h3>Track Your Performance</h3>
+    <p>
+      Detailed analytics, sales trends, and customer insights will be displayed
+      here. This content is from analytics.html.
+    </p>
+    <button class="btn btn-secondary">
+      <i class="fas fa-cogs"></i> Customize View
+    </button>
+  </div>
+</section>
+{% endblock %} {% block page_scripts %} {{ super() }}
+<!-- <script src="{{ url_for('static', filename='js/business/analytics.js') }}"></script> -->
+<script>
+  console.log("Analytics page specific JS loaded.");
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "business/dashboard.html" %} {% block page_title %}Business
+Settings{% endblock %} {% block header_quick_actions %} {# No specific quick
+action button for settings page in this example #} {% endblock %} {% block
+page_content %}
+<section id="settings" class="content-section active">
+  <div class="placeholder-content">
+    <i class="fas fa-sliders-h placeholder-icon"></i>
+    <h3>Configure Your Business</h3>
+    <p>
+      Update business details, manage staff, set preferences, and more. This
+      content is from settings.html.
+    </p>
+    <button class="btn btn-secondary">
+      <i class="fas fa-shield-alt"></i> Account Security
+    </button>
+  </div>
+</section>
+{% endblock %} {% block page_scripts %} {{ super() }}
+<!-- <script src="{{ url_for('static', filename='js/business/settings.js') }}"></script> -->
+<script>
+  console.log("Settings page specific JS loaded.");
+</script>
+{% endblock %}
