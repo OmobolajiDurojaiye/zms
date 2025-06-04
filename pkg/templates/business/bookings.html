@@ -3,6 +3,31 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/business/booking.css') }}"
 />
+<style>
+  /* Styles for the new View Availability Modal */
+  .availability-slot {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+  }
+  .availability-slot.type-available {
+    background-color: #e6ffed;
+    border-left: 3px solid #28a745;
+  }
+  .availability-slot.type-break {
+    background-color: #fff3cd;
+    border-left: 3px solid #ffc107;
+  }
+  .availability-slot.type-blocked_override {
+    background-color: #f8d7da;
+    border-left: 3px solid #dc3545;
+  }
+  #availabilitySlotsContainer .no-availability {
+    color: #6c757d;
+    font-style: italic;
+  }
+</style>
 {% endblock extra_style %} {% block page_title %}Booking Management{% endblock
 %} {% block header_quick_actions %}
 <div class="booking-filters">
@@ -16,10 +41,7 @@
     <option value="this_week">This Week</option>
     <option value="all_upcoming">All Upcoming</option>
   </select>
-  <button class="btn btn-primary" id="newBookingBtn">
-    <i class="fas fa-calendar-plus"></i>
-    New Booking
-  </button>
+  <!-- New Booking Button Removed -->
   <a
     href="{{ url_for('business.manage_availability') }}"
     class="btn btn-secondary"
@@ -116,100 +138,33 @@
   </div>
 </section>
 
-<!-- New Booking Modal -->
-<div id="newBookingModal" class="modal">
+<!-- New Booking Modal Removed -->
+
+<!-- View Availability Modal -->
+<div id="viewAvailabilityModal" class="modal">
   <div class="modal-content">
-    <span class="close-button" id="closeNewBookingModal" title="Close">×</span>
-    <h2>Create New Booking</h2>
-    <form id="newBookingForm">
-      {# CSRF Token: Ensure csrf_token() is available in context if using
-      Flask-WTF globally #}
-      <input
-        type="hidden"
-        name="csrf_token"
-        value="{{ csrf_token() if csrf_token else '' }}"
-      />
-      <div class="form-row">
-        <div class="form-group">
-          <label for="guestFullName"
-            >Client Full Name <span class="required-asterisk">*</span></label
-          >
-          <input
-            type="text"
-            id="guestFullName"
-            name="guest_full_name"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label for="serviceId"
-            >Service <span class="required-asterisk">*</span></label
-          >
-          <select id="serviceId" name="service_id" required>
-            <option value="">Select a service</option>
-            {% for service in services %}
-            <option
-              value="{{ service.id }}"
-              data-duration="{{ service.duration_minutes }}"
-            >
-              {{ service.name }} ({{ service.duration_minutes }} min) - ₦{{
-              "{:,.2f}".format(service.price) }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="guestEmail">Client Email</label>
-          <input type="email" id="guestEmail" name="guest_email" />
-        </div>
-        <div class="form-group">
-          <label for="guestPhoneNumber">Client Phone Number</label>
-          <input type="tel" id="guestPhoneNumber" name="guest_phone_number" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="bookingDate"
-            >Date <span class="required-asterisk">*</span></label
-          >
-          <input type="date" id="bookingDate" name="booking_date" required />
-        </div>
-        <div class="form-group">
-          <label for="bookingTime"
-            >Time <span class="required-asterisk">*</span></label
-          >
-          <input
-            type="time"
-            id="bookingTime"
-            name="booking_time"
-            step="900"
-            required
-          />
-          <!-- step 900 = 15 min intervals -->
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="notesOwner">Notes (for owner)</label>
-        <textarea id="notesOwner" name="notes_owner" rows="3"></textarea>
-      </div>
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          id="cancelNewBookingModal"
-        >
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-primary">Create Booking</button>
-      </div>
-      <div
-        id="newBookingError"
-        class="form-error-message"
-        style="display: none"
-      ></div>
-    </form>
+    <span class="close-button" id="closeViewAvailabilityModal" title="Close"
+      >×</span
+    >
+    <h2>Availability for <span id="availabilityModalDate"></span></h2>
+    <div id="availabilitySlotsContainer" style="margin-bottom: 20px">
+      <!-- Availability slots will be loaded here by JS -->
+      <p>Loading availability...</p>
+    </div>
+    <div class="form-actions" style="text-align: right">
+      <a
+        href="{{ url_for('business.manage_availability') }}"
+        class="btn btn-primary"
+        >Manage General Availability</a
+      >
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="cancelViewAvailabilityModal"
+      >
+        Close
+      </button>
+    </div>
   </div>
 </div>
 
@@ -221,11 +176,18 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 <!-- Day.js for date manipulation -->
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekday.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/localeData.js"></script>
+<script>
+  dayjs.extend(window.dayjs_plugin_weekday);
+  dayjs.extend(window.dayjs_plugin_localeData);
+</script>
 <script>
   // Pass URLs and initial data from Flask to JS
-  var createBookingUrl = "{{ url_for('business.create_booking') }}";
   var getCalendarBookingsUrl =
     "{{ url_for('business.get_calendar_bookings_data') }}";
+  var getAvailabilityOnDateUrl =
+    "{{ url_for('business.get_availability_for_date') }}"; // New URL
   var cancelBookingBaseUrl = "{{ url_for('business.bookings_overview') }}"; // Base path, JS will append /<id>/cancel
   var initialTodayISO = "{{ today_date_iso }}"; // Passed from Python route
 </script>

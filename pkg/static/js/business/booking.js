@@ -1,24 +1,27 @@
 "use strict";
 document.addEventListener("DOMContentLoaded", function () {
-  const newBookingBtn = document.getElementById("newBookingBtn");
-  const newBookingModal = document.getElementById("newBookingModal");
-  const closeNewBookingModalBtn = document.getElementById(
-    "closeNewBookingModal"
-  );
-  const cancelNewBookingModalBtn = document.getElementById(
-    "cancelNewBookingModal"
-  );
-  const newBookingForm = document.getElementById("newBookingForm");
-  const newBookingErrorDiv = document.getElementById("newBookingError");
-  const bookingDateInput = document.getElementById("bookingDate");
+  // Removed variables related to New Booking Modal:
+  // newBookingBtn, newBookingModal, closeNewBookingModalBtn,
+  // cancelNewBookingModalBtn, newBookingForm, newBookingErrorDiv, bookingDateInput (specific one from new booking modal)
 
-  // Set min date for bookingDate input to today and default to today
-  if (bookingDateInput) {
-    bookingDateInput.setAttribute("min", initialTodayISO);
-    bookingDateInput.value = initialTodayISO;
-  }
+  // New View Availability Modal elements
+  const viewAvailabilityModal = document.getElementById(
+    "viewAvailabilityModal"
+  );
+  const closeViewAvailabilityModalBtn = document.getElementById(
+    "closeViewAvailabilityModal"
+  );
+  const cancelViewAvailabilityModalBtn = document.getElementById(
+    "cancelViewAvailabilityModal"
+  );
+  const availabilityModalDateSpan = document.getElementById(
+    "availabilityModalDate"
+  );
+  const availabilitySlotsContainer = document.getElementById(
+    "availabilitySlotsContainer"
+  );
 
-  // Modal Handling
+  // Generic Modal Handling
   function openModal(modal) {
     if (modal) {
       modal.style.display = "block";
@@ -33,101 +36,108 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  if (newBookingBtn) {
-    newBookingBtn.addEventListener("click", () => {
-      if (newBookingForm) newBookingForm.reset();
-      if (bookingDateInput) bookingDateInput.value = initialTodayISO; // Reset date to today on open
-      if (newBookingErrorDiv) {
-        newBookingErrorDiv.style.display = "none";
-        newBookingErrorDiv.textContent = "";
-      }
-      openModal(newBookingModal);
-    });
-  }
-
-  if (closeNewBookingModalBtn) {
-    closeNewBookingModalBtn.addEventListener("click", () =>
-      closeModal(newBookingModal)
+  // View Availability Modal Event Listeners
+  if (closeViewAvailabilityModalBtn) {
+    closeViewAvailabilityModalBtn.addEventListener("click", () =>
+      closeModal(viewAvailabilityModal)
     );
   }
-  if (cancelNewBookingModalBtn) {
-    cancelNewBookingModalBtn.addEventListener("click", () =>
-      closeModal(newBookingModal)
+  if (cancelViewAvailabilityModalBtn) {
+    cancelViewAvailabilityModalBtn.addEventListener("click", () =>
+      closeModal(viewAvailabilityModal)
     );
   }
 
   window.addEventListener("click", (event) => {
-    if (event.target === newBookingModal) {
-      closeModal(newBookingModal);
+    if (event.target === viewAvailabilityModal) {
+      closeModal(viewAvailabilityModal);
     }
   });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
-      if (newBookingModal && newBookingModal.style.display === "block") {
-        closeModal(newBookingModal);
+      if (
+        viewAvailabilityModal &&
+        viewAvailabilityModal.style.display === "block"
+      ) {
+        closeModal(viewAvailabilityModal);
       }
     }
   });
 
-  // New Booking Form Submission
-  if (newBookingForm) {
-    newBookingForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      if (newBookingErrorDiv) {
-        newBookingErrorDiv.style.display = "none";
-        newBookingErrorDiv.textContent = "";
-      }
+  // Function to open and populate View Availability Modal
+  function openViewAvailabilityModal(dateStr) {
+    if (
+      !viewAvailabilityModal ||
+      !availabilityModalDateSpan ||
+      !availabilitySlotsContainer
+    )
+      return;
 
-      const formData = new FormData(this);
-      const submitButton = this.querySelector('button[type="submit"]');
-      const originalButtonText = submitButton.innerHTML;
-      submitButton.disabled = true;
-      submitButton.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Creating...';
+    const formattedDate = dayjs(dateStr).format("dddd, MMMM D, YYYY");
+    availabilityModalDateSpan.textContent = formattedDate;
+    availabilitySlotsContainer.innerHTML = "<p>Loading availability...</p>";
+    openModal(viewAvailabilityModal);
 
-      fetch(createBookingUrl, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "X-CSRFToken":
-            formData.get("csrf_token") ||
-            document
-              .querySelector('meta[name="csrf-token"]')
-              ?.getAttribute("content"),
-        },
+    fetch(`${getAvailabilityOnDateUrl}?date=${dateStr}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
       })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            closeModal(newBookingModal);
-            alert(data.message || "Booking created successfully!");
-            window.location.reload(); // Reload to see changes and flash messages
-          } else {
-            if (newBookingErrorDiv) {
-              newBookingErrorDiv.textContent =
-                data.message || "An unknown error occurred.";
-              newBookingErrorDiv.style.display = "block";
-            } else {
-              alert("Error: " + (data.message || "An unknown error occurred."));
-            }
+      .then((data) => {
+        if (data.success) {
+          availabilitySlotsContainer.innerHTML = ""; // Clear loading
+
+          if (data.message) {
+            const messageP = document.createElement("p");
+            messageP.textContent = data.message;
+            availabilitySlotsContainer.appendChild(messageP);
           }
-        })
-        .catch((error) => {
-          console.error("Error creating booking:", error);
-          if (newBookingErrorDiv) {
-            newBookingErrorDiv.textContent =
-              "A network error occurred. Please try again.";
-            newBookingErrorDiv.style.display = "block";
-          } else {
-            alert("A network error occurred. Please try again.");
+
+          if (data.slots && data.slots.length > 0) {
+            data.slots.forEach((slot) => {
+              const slotDiv = document.createElement("div");
+              slotDiv.classList.add("availability-slot");
+              slotDiv.classList.add(
+                `type-${slot.slot_type.toLowerCase().replace("_", "-")}`
+              );
+
+              const timeSpan = document.createElement("span");
+              timeSpan.textContent = `${slot.start_time} - ${slot.end_time}`;
+
+              const typeText = document.createTextNode(
+                ` (${slot.slot_type
+                  .replace("_", " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())})`
+              );
+
+              slotDiv.appendChild(timeSpan);
+              slotDiv.appendChild(typeText);
+              availabilitySlotsContainer.appendChild(slotDiv);
+            });
+          } else if (
+            !data.message &&
+            (!data.slots || data.slots.length === 0)
+          ) {
+            // If no slots and no specific message (e.g. weekly_closed already showed message)
+            const noSlotsP = document.createElement("p");
+            noSlotsP.classList.add("no-availability");
+            noSlotsP.textContent =
+              "No specific availability slots defined for this day.";
+            availabilitySlotsContainer.appendChild(noSlotsP);
           }
-        })
-        .finally(() => {
-          submitButton.disabled = false;
-          submitButton.innerHTML = originalButtonText;
-        });
-    });
+        } else {
+          availabilitySlotsContainer.innerHTML = `<p class="form-error-message">Error: ${
+            data.message || "Could not fetch availability."
+          }</p>`;
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching availability:", error);
+        availabilitySlotsContainer.innerHTML = `<p class="form-error-message">A network error occurred. Please try again.</p>`;
+      });
   }
 
   // FullCalendar Integration
@@ -137,8 +147,8 @@ document.addEventListener("DOMContentLoaded", function () {
   if (calendarEl) {
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
-      headerToolbar: false,
-      height: "auto",
+      headerToolbar: false, // Custom header controls are used
+      height: "auto", // Adjusts height to content
       events: {
         url: getCalendarBookingsUrl,
         failure: function (error) {
@@ -157,26 +167,13 @@ document.addEventListener("DOMContentLoaded", function () {
       selectable: true,
       selectMirror: true,
       select: function (info) {
-        openModal(newBookingModal);
-        if (newBookingForm) newBookingForm.reset();
-
+        // MODIFIED: Open View Availability Modal instead of New Booking Modal
         const selectedDate = dayjs(info.start).format("YYYY-MM-DD");
-        const selectedTime = dayjs(info.start).format("HH:mm");
-
-        if (bookingDateInput) bookingDateInput.value = selectedDate;
-        const bookingTimeInput = document.getElementById("bookingTime");
-        if (bookingTimeInput && !info.allDay) {
-          // If a time slot is clicked in timeGrid view
-          bookingTimeInput.value = selectedTime;
-        } else if (bookingTimeInput) {
-          // Default if only date is clicked
-          bookingTimeInput.value = ""; // Or a default time like '09:00'
-        }
-
-        if (newBookingErrorDiv) newBookingErrorDiv.style.display = "none";
+        openViewAvailabilityModal(selectedDate);
         calendar.unselect();
       },
       eventClick: function (info) {
+        // Existing eventClick logic for showing booking details
         let details = `Service: ${
           info.event.extendedProps.serviceName || info.event.title
         }\n`;
@@ -195,12 +192,13 @@ document.addEventListener("DOMContentLoaded", function () {
           details += `Notes: ${info.event.extendedProps.notes}\n`;
         }
         alert(details);
-        // TODO: Implement edit functionality (e.g., openEditBookingModal(info.event.id))
+        // TODO: Implement edit booking modal if needed, triggered differently
       },
-      dayMaxEvents: true,
+      dayMaxEvents: true, // True: allow "more" link when too many events
     });
     calendar.render();
 
+    // Calendar navigation controls
     const prevMonthBtn = document.getElementById("prevMonthBtn");
     const nextMonthBtn = document.getElementById("nextMonthBtn");
     const todayBtn = document.getElementById("todayBtn");
@@ -232,13 +230,12 @@ document.addEventListener("DOMContentLoaded", function () {
         updateCalendarHeader();
       });
 
-    // Initial header update using FullCalendar's date, not necessarily server's today
-    if (calendarMonthYearEl && calendar) updateCalendarHeader();
+    if (calendarMonthYearEl && calendar) updateCalendarHeader(); // Initial header
   } else {
     console.warn("Calendar element #calendarView not found.");
   }
 
-  // Appointment Actions
+  // Appointment Actions (Cancel, Edit, Contact) - Kept as is
   document.querySelectorAll(".btn-cancel-booking").forEach((button) => {
     button.addEventListener("click", function () {
       const bookingId = this.dataset.bookingId;
@@ -259,7 +256,7 @@ document.addEventListener("DOMContentLoaded", function () {
           method: "POST",
           headers: {
             "X-CSRFToken":
-              document.querySelector('input[name="csrf_token"]')?.value ||
+              document.querySelector('input[name="csrf_token"]')?.value || // Check if CSRF token is still needed/available on page
               document
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content"),
@@ -269,12 +266,7 @@ document.addEventListener("DOMContentLoaded", function () {
           .then((data) => {
             if (data.success) {
               alert(data.message || "Booking cancelled successfully.");
-              // Option 1: Reload page (simple, shows flash messages)
               window.location.reload();
-              // Option 2: Update UI dynamically (more SPA-like)
-              // this.closest('.appointment-item').remove();
-              // if (calendar) calendar.refetchEvents();
-              // updateAppointmentListIfEmpty();
             } else {
               alert(
                 "Failed to cancel booking: " + (data.message || "Unknown error")
@@ -310,6 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // Function to update appointment list (e.g., after a cancellation) - kept as is
   function updateAppointmentListIfEmpty() {
     const appointmentList = document.getElementById("appointmentList");
     if (
@@ -317,8 +310,11 @@ document.addEventListener("DOMContentLoaded", function () {
       (appointmentList.children.length === 1 &&
         appointmentList.children[0].classList.contains("no-appointments"))
     ) {
-      appointmentList.innerHTML =
-        '<p class="no-appointments">No appointments scheduled for today.</p>';
+      // If list is empty or only contains the "no appointments" message
+      if (appointmentList.querySelector(".no-appointments") === null) {
+        appointmentList.innerHTML =
+          '<p class="no-appointments">No appointments scheduled for today.</p>';
+      }
     }
   }
 
@@ -327,8 +323,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // if (bookingDateFilter) {
   //     bookingDateFilter.addEventListener('change', function() {
   //         const filterValue = this.value;
-  //         // This would typically involve an AJAX call to fetch and re-render the appointment list
-  //         // and potentially update the calendar's date/view.
   //         alert(`Filter changed to: ${filterValue}. Dynamic list update is a TODO.`);
   //     });
   // }

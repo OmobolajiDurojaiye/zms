@@ -1,10 +1,10 @@
 from flask import render_template, request, jsonify, flash, session, redirect, url_for, current_app
-from . import business_bp
+from . import business_bp  # Assuming business_bp is defined in __init__.py of the 'business' blueprint folder
 from pkg.models import db, BusinessOwner, Booking, Service, Client, BusinessAvailability
-from pkg.routes.main.auth import business_owner_required
+from pkg.routes.main.auth import business_owner_required # Assuming this decorator is correctly defined
 from datetime import datetime, date as dt_date, timedelta, time as dt_time
 from sqlalchemy import or_, and_, not_
-import collections # For defaultdict (though we simplified its direct use in one spot)
+# import collections # Not strictly needed with current implementation but kept if used elsewhere
 
 # Helper function to get current business owner
 def get_current_business_owner():
@@ -13,14 +13,20 @@ def get_current_business_owner():
         return BusinessOwner.query.get(owner_id)
     return None
 
-# Helper function to render the list of date overrides as HTML (for AJAX updates)
+# Helper function to render the list of date overrides as HTML (for AJAX updates in manage_availability.html)
 def _render_overrides_list_html(owner_id):
     overrides = BusinessAvailability.query.filter(
         BusinessAvailability.business_owner_id == owner_id,
         BusinessAvailability.specific_date.isnot(None)
     ).order_by(BusinessAvailability.specific_date.asc(), BusinessAvailability.start_time.asc()).all()
     # Assumes you have a partial template: 'business/partials/availability_overrides_list.html'
-    return render_template("business/partials/availability_overrides_list.html", date_overrides=overrides)
+    # If this partial does not exist, this function will error or you'll need to create it.
+    # For now, we'll assume it exists or this function is primarily for the manage_availability page.
+    try:
+        return render_template("business/partials/availability_overrides_list.html", date_overrides=overrides)
+    except Exception as e:
+        current_app.logger.error(f"Error rendering overrides partial: {e}")
+        return "<p>Error loading overrides list.</p>"
 
 
 @business_bp.route('/dashboard/bookings', methods=['GET'])
@@ -42,6 +48,7 @@ def bookings_overview():
         Booking.status.notin_(['cancelled_by_owner', 'cancelled_by_client'])
     ).order_by(Booking.start_datetime.asc()).all()
 
+    # Services might still be needed if you have other ways to create bookings or for other UI elements.
     services = Service.query.filter_by(business_owner_id=owner.id, is_active=True).order_by(Service.name).all()
 
     current_calendar_month_name = today_obj.strftime("%B")
@@ -59,6 +66,8 @@ def bookings_overview():
 @business_bp.route('/dashboard/bookings/create', methods=['POST'])
 @business_owner_required
 def create_booking():
+    # This route is no longer directly triggered by the calendar click on bookings.html
+    # but is kept for potential other uses (e.g., a dedicated "Create Booking" page or admin action).
     owner = get_current_business_owner()
     if not owner:
         return jsonify({'success': False, 'message': 'Authentication required.'}), 401
@@ -89,9 +98,8 @@ def create_booking():
 
         # TODO: Implement robust availability check using a function like is_timeslot_available(owner.id, start_datetime, end_datetime)
         # This function would consider BusinessAvailability model (weekly and overrides)
-        # and also check for existing bookings.
+        # and also check for existing bookings. This is crucial for a production system.
 
-        # Basic conflict check for existing bookings (should be part of the more robust check later)
         conflicting_booking = Booking.query.filter(
             Booking.business_owner_id == owner.id,
             Booking.start_datetime < end_datetime,
@@ -111,7 +119,7 @@ def create_booking():
             guest_email=guest_email or None,
             guest_phone_number=guest_phone_number or None,
             notes_owner=notes_owner or None,
-            status='confirmed'
+            status='confirmed' # Or 'pending_confirmation' if owner needs to approve
         )
         db.session.add(new_booking)
         db.session.commit()
@@ -141,13 +149,14 @@ def get_calendar_bookings_data():
         return jsonify({'success': False, 'message': 'Start and end dates are required.'}), 400
 
     try:
+        # Handle both ISO format with timezone and simple date strings
         start_dt = datetime.fromisoformat(start_str.replace('Z', '+00:00') if 'T' in start_str else start_str + "T00:00:00+00:00")
         end_dt = datetime.fromisoformat(end_str.replace('Z', '+00:00') if 'T' in end_str else end_str + "T00:00:00+00:00")
 
         bookings_raw = Booking.query.filter(
             Booking.business_owner_id == owner.id,
             Booking.start_datetime >= start_dt,
-            Booking.start_datetime < end_dt,
+            Booking.start_datetime < end_dt, # Use < end_dt for full day coverage if end_dt is start of next day
             Booking.status.notin_(['cancelled_by_owner', 'cancelled_by_client'])
         ).order_by(Booking.start_datetime.asc()).all()
 
@@ -162,8 +171,8 @@ def get_calendar_bookings_data():
                 'status': booking.status,
                 'serviceName': booking.service.name,
                 'clientName': booking.client_display_name,
-                'notes': booking.notes_owner,
-                'className': f'event-status-{booking.status.lower().replace("_", "-")}'
+                'notes': booking.notes_owner, # Or combined notes as needed
+                'className': f'event-status-{booking.status.lower().replace("_", "-")}' # For custom styling
             })
         return jsonify(calendar_events)
     except Exception as e:
@@ -200,30 +209,24 @@ def manage_availability():
         flash('Business owner not found. Please login again.', 'danger')
         return redirect(url_for('main.auth_page_get', tab='businessOwnerTab', form='login'))
 
-    # Fetch existing weekly availability
     weekly_slots_raw = BusinessAvailability.query.filter(
         BusinessAvailability.business_owner_id == owner.id,
         BusinessAvailability.day_of_week.isnot(None)
     ).order_by(BusinessAvailability.day_of_week, BusinessAvailability.start_time).all()
 
-    # Structure for the template: list of 7 days, each is a dictionary.
-    # Each dictionary will have 'is_closed' (boolean) and 'slots' (list of slot dicts).
     weekly_availability_structured = []
-    for _ in range(7):
+    for _ in range(7): # Monday to Sunday
         weekly_availability_structured.append({
-            "is_closed": True,  # Default to closed
-            "slots": []         # Always initialize 'slots' as an empty list
+            "is_closed": True,
+            "slots": []
         })
 
     days_of_week_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     for slot_from_db in weekly_slots_raw:
         day_index = slot_from_db.day_of_week
-        if 0 <= day_index < 7: # Ensure day_index is valid
-            # If we find any slot for a day, it means the day is not entirely closed.
+        if 0 <= day_index < 7: # Ensure day_index is valid (0=Mon, 6=Sun)
             weekly_availability_structured[day_index]['is_closed'] = False
-            
-            # Append the current slot to the 'slots' list for that day
             weekly_availability_structured[day_index]['slots'].append({
                 'id': slot_from_db.id,
                 'start_time': slot_from_db.start_time.strftime('%H:%M'),
@@ -231,7 +234,6 @@ def manage_availability():
                 'slot_type': slot_from_db.slot_type
             })
 
-    # Fetch existing date overrides
     date_overrides = BusinessAvailability.query.filter(
         BusinessAvailability.business_owner_id == owner.id,
         BusinessAvailability.specific_date.isnot(None)
@@ -242,33 +244,37 @@ def manage_availability():
                            current_business_owner=owner,
                            weekly_availability=weekly_availability_structured,
                            date_overrides=date_overrides,
-                           days_of_week_names=days_of_week_names # Passed for potential use in template
+                           days_of_week_names=days_of_week_names
                            )
 
 @business_bp.route('/dashboard/availability/weekly', methods=['POST'])
 @business_owner_required
 def save_weekly_availability():
     owner = get_current_business_owner()
+    if not owner:
+        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+        
     form_data = request.form
     days_of_week_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-
     try:
+        # Fetch existing weekly slots for this owner to compare
         existing_db_slots = BusinessAvailability.query.filter(
             BusinessAvailability.business_owner_id == owner.id,
             BusinessAvailability.day_of_week.isnot(None)
         ).all()
         existing_db_slot_ids = {slot.id for slot in existing_db_slots}
-        form_slot_ids = set() # To track IDs of slots submitted in the form (for updates)
+        form_slot_ids = set() # Track IDs of slots submitted in the form (for updates/presence)
 
-        for day_idx in range(7): # Iterate 0 through 6 for days
+        for day_idx in range(7): # Iterate 0 (Monday) through 6 (Sunday)
             day_prefix = f"days[{day_idx}]"
             is_closed = form_data.get(f"{day_prefix}[is_closed]") == 'on'
 
             if is_closed:
                 # If day is marked closed, any existing weekly slots for this day
-                # (that are not in form_slot_ids) will be deleted by the logic below.
-                continue # Move to next day
+                # (that are not explicitly part of the form submission, if any)
+                # will be removed by the deletion logic at the end.
+                continue # Move to next day, no slots to process for this day
 
             slot_idx = 0
             while True:
@@ -279,11 +285,11 @@ def save_weekly_availability():
                     break
 
                 end_time_str = form_data.get(f"{slot_prefix}[end_time]")
-                slot_type = form_data.get(f"{slot_prefix}[slot_type]", 'available')
-                slot_id_str = form_data.get(f"{slot_prefix}[id]")
+                slot_type = form_data.get(f"{slot_prefix}[slot_type]", 'available') # Default to 'available'
+                slot_id_str = form_data.get(f"{slot_prefix}[id]") # For existing slots being updated
                 slot_id = int(slot_id_str) if slot_id_str and slot_id_str.isdigit() else None
 
-                if not start_time_str or not end_time_str: # Should be caught by 'required' on frontend
+                if not start_time_str or not end_time_str: # Should be caught by 'required' on frontend ideally
                     slot_idx += 1
                     continue
 
@@ -291,7 +297,7 @@ def save_weekly_availability():
                 end_time_obj = dt_time.fromisoformat(end_time_str)
 
                 if start_time_obj >= end_time_obj:
-                    db.session.rollback()
+                    db.session.rollback() # Important to rollback before returning error
                     return jsonify({'success': False, 'message': f'Error for {days_of_week_names[day_idx]}: Start time ({start_time_str}) must be before end time ({end_time_str}).'}), 400
 
                 if slot_id and slot_id in existing_db_slot_ids:
@@ -303,7 +309,7 @@ def save_weekly_availability():
                         slot_to_update.end_time = end_time_obj
                         slot_to_update.slot_type = slot_type
                         slot_to_update.specific_date = None # Ensure it's a weekly slot
-                        form_slot_ids.add(slot_id)
+                        form_slot_ids.add(slot_id) # Mark this ID as processed from the form
                 else:
                     # Create new slot
                     new_slot = BusinessAvailability(
@@ -312,21 +318,21 @@ def save_weekly_availability():
                         start_time=start_time_obj,
                         end_time=end_time_obj,
                         slot_type=slot_type,
-                        specific_date=None
+                        specific_date=None # Explicitly None for weekly
                     )
                     db.session.add(new_slot)
-                    # If you need the ID of the new slot immediately for some reason (e.g., to return it),
-                    # you would db.session.flush() here and then add new_slot.id to form_slot_ids.
-                    # However, for deletion logic, we only care about existing IDs.
+                    # If you needed the ID right away, you'd flush and then could add new_slot.id to form_slot_ids.
+                    # For deletion logic, we only care about existing IDs that were NOT in the form.
                 slot_idx += 1
         
-        # Delete slots that were in DB but not in the form submission (implies removal)
+        # Delete slots that were in DB but not in the form submission (implies removal by user)
         slots_to_delete_ids = existing_db_slot_ids - form_slot_ids
         if slots_to_delete_ids:
             BusinessAvailability.query.filter(
                 BusinessAvailability.id.in_(slots_to_delete_ids),
-                BusinessAvailability.business_owner_id == owner.id # extra safety
-            ).delete(synchronize_session=False)
+                BusinessAvailability.business_owner_id == owner.id, # Ensure owner context for deletion
+                BusinessAvailability.day_of_week.isnot(None) # Ensure we only delete weekly slots here
+            ).delete(synchronize_session=False) # 'False' is often fine, 'fetch' or 'evaluate' can be safer depending on session state.
 
         db.session.commit()
         flash('Weekly schedule updated successfully!', 'success')
@@ -346,6 +352,9 @@ def save_weekly_availability():
 @business_owner_required
 def save_date_override_availability():
     owner = get_current_business_owner()
+    if not owner:
+         return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+
     form_data = request.form
     try:
         override_date_str = form_data.get('override_date')
@@ -356,18 +365,19 @@ def save_date_override_availability():
 
         specific_date_obj = dt_date.fromisoformat(override_date_str)
 
-        # First, remove any existing overrides for this specific date for this owner to simplify logic
+        # First, remove any existing overrides for this specific date for this owner to simplify logic.
+        # This makes the operation idempotent for the given date.
         BusinessAvailability.query.filter_by(
             business_owner_id=owner.id,
             specific_date=specific_date_obj
-        ).delete(synchronize_session='fetch') # Using 'fetch' can be safer before adding new conflicting ones
+        ).delete(synchronize_session='fetch') # 'fetch' ensures objects are loaded for potential further processing if needed.
 
         if override_type == 'blocked_override':
             # Create a single entry marking the whole day as blocked
             blocked_slot = BusinessAvailability(
                 business_owner_id=owner.id,
                 specific_date=specific_date_obj,
-                start_time=dt_time(0, 0), # Represents start of the day
+                start_time=dt_time(0, 0, 0), # Represents start of the day
                 end_time=dt_time(23, 59, 59), # Represents end of the day
                 slot_type='blocked_override',
                 day_of_week=None # Important: this is a specific date override
@@ -383,7 +393,8 @@ def save_date_override_availability():
                     break
 
                 end_time_str = form_data.get(f"{slot_prefix}[end_time]")
-                slot_type = form_data.get(f"{slot_prefix}[slot_type]", 'available')
+                # Slot type for individual slots within an "available" override can be 'available' or 'break'
+                slot_type_individual = form_data.get(f"{slot_prefix}[slot_type]", 'available')
 
                 if not start_time_str or not end_time_str:
                     slot_idx += 1
@@ -401,20 +412,23 @@ def save_date_override_availability():
                     specific_date=specific_date_obj,
                     start_time=start_time_obj,
                     end_time=end_time_obj,
-                    slot_type=slot_type, # Could be 'available' or 'break' within custom hours
+                    slot_type=slot_type_individual, # e.g. 'available' or 'break'
                     day_of_week=None
                 )
                 db.session.add(new_override_slot)
                 has_valid_slots = True
                 slot_idx += 1
             
-            if not has_valid_slots: # No slots submitted for "available" type
+            if not has_valid_slots: # No actual time slots provided for "available" type
                  db.session.rollback()
                  return jsonify({'success': False, 'message': 'For "Set Custom Hours", at least one time slot is required.'}), 400
+        else:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': 'Invalid override type specified.'}), 400
 
 
         db.session.commit()
-        overrides_html = _render_overrides_list_html(owner.id)
+        overrides_html = _render_overrides_list_html(owner.id) # For updating the list on manage_availability page
         flash('Date override saved successfully!', 'success')
         return jsonify({'success': True, 'message': 'Date override saved!', 'overrides_html': overrides_html})
 
@@ -428,10 +442,13 @@ def save_date_override_availability():
         return jsonify({'success': False, 'message': 'An unexpected error occurred.'}), 500
 
 
-@business_bp.route('/dashboard/availability/delete/<int:availability_id>', methods=['DELETE', 'POST']) # Allow POST for simpler forms if needed
+@business_bp.route('/dashboard/availability/delete/<int:availability_id>', methods=['DELETE', 'POST']) # Allow POST for simpler forms/links
 @business_owner_required
 def delete_availability_slot(availability_id):
     owner = get_current_business_owner()
+    if not owner:
+         return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+
     slot = BusinessAvailability.query.filter_by(id=availability_id, business_owner_id=owner.id).first_or_404()
 
     try:
@@ -440,16 +457,87 @@ def delete_availability_slot(availability_id):
         db.session.commit()
 
         if is_date_override:
-            overrides_html = _render_overrides_list_html(owner.id)
+            overrides_html = _render_overrides_list_html(owner.id) # Regenerate list for manage_availability page
+            flash('Date override slot deleted successfully!', 'success')
             return jsonify({'success': True, 'message': 'Availability slot deleted.', 'overrides_html': overrides_html})
         else: # It was a weekly slot
-             # For weekly slots, the frontend might need a more complex update or a page reload.
-             # A simple success message is fine, but the UI might not reflect the change immediately without JS handling.
              flash('Weekly availability slot deleted. The page may need to be refreshed to see all changes to the weekly schedule.', 'success')
+             # For weekly, a full page reload or more complex JS update on manage_availability.html would be needed.
+             # For simplicity, this just returns success; the manage_availability page would refetch on next load.
              return jsonify({'success': True, 'message': 'Weekly availability slot deleted.'})
-
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting availability slot {availability_id}: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete slot.'}), 500
+
+@business_bp.route('/dashboard/availability/on_date', methods=['GET'])
+@business_owner_required
+def get_availability_for_date():
+    owner = get_current_business_owner()
+    if not owner:
+        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+
+    date_str = request.args.get('date')
+    if not date_str:
+        return jsonify({'success': False, 'message': 'Date parameter is required.'}), 400
+
+    try:
+        target_date = dt_date.fromisoformat(date_str)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid date format. Please use YYYY-MM-DD.'}), 400
+
+    # 1. Check for specific date overrides for the target_date
+    specific_overrides = BusinessAvailability.query.filter(
+        BusinessAvailability.business_owner_id == owner.id,
+        BusinessAvailability.specific_date == target_date
+    ).order_by(BusinessAvailability.start_time.asc()).all()
+
+    if specific_overrides:
+        # If there's any override, it takes precedence.
+        # Check if one of them is a 'blocked_override' type, which usually means the whole day is blocked.
+        if any(slot.slot_type == 'blocked_override' for slot in specific_overrides):
+            # Typically, a 'blocked_override' would be a single slot covering the day.
+            # We return all slots found for that day, but the presence of 'blocked_override' signals unavailability.
+            return jsonify({
+                'success': True,
+                'date': date_str,
+                'type': 'specific_override_blocked',
+                'message': f'This day ({target_date.strftime("%A, %b %d, %Y")}) is specifically set as unavailable/blocked.',
+                'slots': [slot.to_dict() for slot in specific_overrides] # Could be one full day slot or more if misconfigured
+            })
+        else: # Custom hours (available/break slots) for this specific date
+            return jsonify({
+                'success': True,
+                'date': date_str,
+                'type': 'specific_override_custom_hours',
+                'message': f'Custom availability for {target_date.strftime("%A, %b %d, %Y")}:',
+                'slots': [slot.to_dict() for slot in specific_overrides]
+            })
+
+    # 2. If no specific overrides, fall back to the weekly schedule
+    day_of_week_num = target_date.weekday()  # Monday is 0 and Sunday is 6
+
+    weekly_slots = BusinessAvailability.query.filter(
+        BusinessAvailability.business_owner_id == owner.id,
+        BusinessAvailability.day_of_week == day_of_week_num
+    ).order_by(BusinessAvailability.start_time.asc()).all()
+
+    if weekly_slots:
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'day_of_week': day_of_week_num,
+            'type': 'weekly_schedule',
+            'message': f'Weekly availability for {target_date.strftime("%A, %b %d, %Y")}:',
+            'slots': [slot.to_dict() for slot in weekly_slots]
+        })
+    else: # No weekly slots defined for this day of the week, so it's considered closed.
+        return jsonify({
+            'success': True,
+            'date': date_str,
+            'day_of_week': day_of_week_num,
+            'type': 'weekly_closed',
+            'message': f'{target_date.strftime("%A, %b %d, %Y")} is closed according to the weekly schedule (no hours defined).',
+            'slots': []
+        })
