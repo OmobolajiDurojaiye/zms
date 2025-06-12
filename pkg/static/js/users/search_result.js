@@ -24,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ##### FIX APPLIED HERE: Function to get CSRF token from the hidden input #####
   function getCsrfToken() {
     const tokenInput = document.querySelector('input[name="csrf_token"]');
     return tokenInput ? tokenInput.value : null;
@@ -61,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const showToast = (type, title, message) => {
     const container = document.getElementById("toastContainer");
     if (!container) {
-      // Fallback if toast container is not on the page
       alert(`${title}: ${message}`);
       return;
     }
@@ -89,29 +87,35 @@ document.addEventListener("DOMContentLoaded", () => {
       openModal();
 
       try {
+        // The new route provides all necessary data including image_url
         const response = await fetch(
           `/users/service/${currentServiceId}/details`
         );
         if (!response.ok) throw new Error("Service not found");
         const service = await response.json();
 
-        // Populate modal
+        // Populate modal with fetched data
+        document.getElementById("modalServiceImage").src = service.image_url;
+        document.getElementById("modalServiceImage").alt = service.name;
         document.getElementById("modalServiceName").textContent = service.name;
         document.getElementById("modalServiceDescription").textContent =
           service.description || "No description provided.";
-        document.getElementById(
-          "modalServicePrice"
-        ).textContent = `$${parseFloat(service.price).toFixed(2)}`;
-        document.getElementById(
-          "modalServiceDuration"
-        ).textContent = `${service.duration_minutes} minutes`;
-        document.getElementById("modalBusinessName").textContent =
-          service.business.name;
-        document.getElementById(
-          "modalBusinessAddress"
-        ).textContent = `${service.business.lga_province}, ${service.business.state}`;
+        
+        // MODIFIED: Changed currency to Naira
+        document.getElementById("modalServicePrice").textContent = `₦${parseFloat(service.price).toFixed(2)}`;
+        
+        // MODIFIED: Handle optional duration
+        const durationContainer = document.getElementById("modalDurationContainer");
+        if (service.duration_minutes) {
+          document.getElementById("modalServiceDuration").textContent = `${service.duration_minutes} min`;
+          durationContainer.style.display = 'block';
+        } else {
+          durationContainer.style.display = 'none';
+        }
+        
+        document.getElementById("modalBusinessName").textContent = service.business.name;
+        document.getElementById("modalBusinessAddress").textContent = `${service.business.lga_province || service.business.state}`;
 
-        // Set min date for date picker
         const datePicker = document.getElementById("bookingDate");
         datePicker.min = new Date().toISOString().split("T")[0];
 
@@ -164,7 +168,6 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.textContent = time;
             btn.dataset.time = time;
             btn.addEventListener("click", () => {
-              // Deselect other buttons
               document
                 .querySelectorAll(".time-slot-btn.selected")
                 .forEach((b) => b.classList.remove("selected"));
@@ -210,7 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // ##### FIX APPLIED HERE: Added CSRF token to request header #####
             "X-CSRFToken": getCsrfToken(),
           },
           body: JSON.stringify({
@@ -220,23 +222,18 @@ document.addEventListener("DOMContentLoaded", () => {
           }),
         });
 
-        // The response MUST be parsed as JSON, if it's not, it will throw an error.
         const result = await response.json();
 
         if (response.ok) {
           closeModal();
           showToast("success", "Success!", result.message);
         } else {
-          // Throw an error with the message from the server's JSON response
           throw new Error(result.message || "An unknown error occurred.");
         }
       } catch (error) {
-        // This catch block will now handle both network errors and JSON parsing errors
         showToast("error", "Booking Failed", error.message);
-        // Optionally, refresh availability
         datePicker.dispatchEvent(new Event("change"));
       } finally {
-        // Reset button state even on failure, but only if a time is still selected
         if (selectedTime) {
           bookNowBtn.disabled = false;
           bookNowBtn.textContent = `Book for ${selectedTime}`;

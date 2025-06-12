@@ -48,17 +48,13 @@
               <input type="text" id="business_name" name="business_name" value="{{ current_business_owner.business_name | e }}" required>
             </div>
             
-            <!-- MODIFIED: Replaced the single-select dropdown with a multi-select input -->
             <div class="form-group">
               <label for="business_type">Business Type(s)</label>
               <select id="business_type" name="business_type" multiple>
-                {# Flatten the list of all business types from the categorized dictionary and sort them #}
                 {% set all_business_types = business_categories.values() | sum(start=[]) | sort %}
-
                 {% for type in all_business_types %}
                   <option 
                     value="{{ type }}" 
-                    {# Check if the type is in the owner's list of business types #}
                     {% if current_business_owner.business_type and type in current_business_owner.business_type %}selected{% endif %}>
                     {{ type }}
                   </option>
@@ -66,7 +62,6 @@
               </select>
               <small class="form-text">You can select more than one. Start typing to search.</small>
             </div>
-            <!-- END OF MODIFICATION -->
 
             <div class="form-row">
               <div class="form-group">
@@ -103,9 +98,15 @@
           <ul class="service-list">
             {% for service in services %}
             <li class="service-item">
+              <div class="service-image-container">
+                <img src="{{ service.image_url }}" alt="{{ service.name }} image" class="service-image">
+              </div>
               <div class="service-info">
                 <strong class="service-name">{{ service.name }}</strong>
-                <span class="service-meta">{{ service.duration_minutes }} min • ₦{{ "%.2f"|format(service.price) }}</span>
+                <span class="service-meta">
+                  {% if service.duration_minutes %}{{ service.duration_minutes }} min • {% endif %}
+                  ₦{{ "%.2f"|format(service.price) }}
+                </span>
                 <p class="service-desc">{{ service.description | truncate(80) }}</p>
               </div>
               <div class="service-actions">
@@ -116,9 +117,10 @@
                         data-id="{{ service.id }}" 
                         data-name="{{ service.name | e }}"
                         data-description="{{ service.description | e }}"
-                        data-duration="{{ service.duration_minutes }}"
+                        data-duration="{{ service.duration_minutes or '' }}"
                         data-price="{{ "%.2f"|format(service.price) }}"
-                        data-is-active="{{ service.is_active|lower }}">
+                        data-is-active="{{ service.is_active|lower }}"
+                        data-image-url="{{ service.image_url }}">
                   <i class="fas fa-pencil-alt"></i>
                 </button>
                 <form action="{{ url_for('business.delete_service', service_id=service.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this service?');">
@@ -137,16 +139,25 @@
         </div>
         <div class="card-footer">
             <h4>Add a New Service</h4>
-            <form action="{{ url_for('business.add_service') }}" method="POST">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" hidden>
+            <form action="{{ url_for('business.add_service') }}" method="POST" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="new_service_name">Service Name</label>
                     <input type="text" id="new_service_name" name="name" placeholder="e.g., Men's Haircut" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="new_service_duration">Duration (minutes)</label>
-                        <input type="number" id="new_service_duration" name="duration_minutes" placeholder="e.g., 30" required>
+                        <label for="new_service_duration">Duration (minutes) <span class="optional-text">(Optional)</span></label>
+                        <div class="duration-input-group" id="new_duration_group">
+                            <input type="number" id="new_service_duration" name="duration_minutes" placeholder="e.g., 45" min="0" step="5">
+                            <div class="duration-presets">
+                                <button type="button" class="btn-preset" data-value="15">15m</button>
+                                <button type="button" class="btn-preset" data-value="30">30m</button>
+                                <button type="button" class="btn-preset" data-value="45">45m</button>
+                                <button type="button" class="btn-preset" data-value="60">1h</button>
+                                <button type="button" class="btn-preset" data-value="90">1.5h</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="new_service_price">Price (₦)</label>
@@ -156,6 +167,17 @@
                 <div class="form-group">
                     <label for="new_service_description">Description (Optional)</label>
                     <textarea id="new_service_description" name="description" rows="3" placeholder="Briefly describe what this service includes."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="new_service_image">Service Image (Optional)</label>
+                    <div class="image-upload-wrapper">
+                        <img id="new_service_image_preview" src="{{ url_for('static', filename='images/placeholder-service.jpg') }}" alt="Image Preview" class="image-preview"/>
+                        <div class="image-upload-controls">
+                            <input type="file" name="image" id="new_service_image" class="file-input-hidden" accept="image/png, image/jpeg, image/gif, image/webp">
+                            <label for="new_service_image" class="btn btn-secondary">Choose File</label>
+                            <span class="file-name-display">No file chosen</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Add Service</button>
@@ -181,7 +203,7 @@
   <div class="modal-content">
     <span class="close-button">×</span>
     <h2>Edit Service</h2>
-    <form id="editServiceForm" method="POST">
+    <form id="editServiceForm" method="POST" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label for="edit_service_name">Service Name</label>
@@ -189,8 +211,17 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="edit_service_duration">Duration (minutes)</label>
-          <input type="number" id="edit_service_duration" name="duration_minutes" required>
+          <label for="edit_service_duration">Duration (minutes) <span class="optional-text">(Optional)</span></label>
+          <div class="duration-input-group" id="edit_duration_group">
+              <input type="number" id="edit_service_duration" name="duration_minutes" placeholder="e.g., 45" min="0" step="5">
+              <div class="duration-presets">
+                  <button type="button" class="btn-preset" data-value="15">15m</button>
+                  <button type="button" class="btn-preset" data-value="30">30m</button>
+                  <button type="button" class="btn-preset" data-value="45">45m</button>
+                  <button type="button" class="btn-preset" data-value="60">1h</button>
+                  <button type="button" class="btn-preset" data-value="90">1.5h</button>
+              </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="edit_service_price">Price (₦)</label>
@@ -200,6 +231,17 @@
       <div class="form-group">
         <label for="edit_service_description">Description</label>
         <textarea id="edit_service_description" name="description" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="edit_service_image">Change Service Image (Optional)</label>
+        <div class="image-upload-wrapper">
+            <img id="edit_service_image_preview" src="" alt="Current Service Image" class="image-preview"/>
+            <div class="image-upload-controls">
+                <input type="file" name="image" id="edit_service_image" class="file-input-hidden" accept="image/png, image/jpeg, image/gif, image/webp">
+                <label for="edit_service_image" class="btn btn-secondary">Choose New File</label>
+                <span class="file-name-display">No new file chosen</span>
+            </div>
+        </div>
       </div>
        <div class="form-group-checkbox">
           <input type="checkbox" id="edit_is_active" name="is_active" value="true">
@@ -215,7 +257,6 @@
 {% endblock %}
 
 {% block page_scripts %}
-{# MODIFIED: Added Choices.js script #}
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script src="{{ url_for('static', filename='js/business/settings.js') }}"></script>
 {% endblock %}

@@ -4,12 +4,13 @@
   href="{{ url_for('static', filename='css/business/booking.css') }}"
 />
 <style>
-  /* Styles for the new View Availability Modal */
+  /* Styles for the old View Availability Modal (kept for reference) */
   .availability-slot {
     padding: 8px;
     margin-bottom: 5px;
     border-radius: 4px;
     border: 1px solid #eee;
+    transition: background-color 0.2s;
   }
   .availability-slot.type-available {
     background-color: #e6ffed;
@@ -27,13 +28,15 @@
     color: #6c757d;
     font-style: italic;
   }
-
-  /* --- NEW STYLES for Today's Appointments List --- */
-  .appointment-list {
-    max-height: 550px; /* Adjust height as needed */
-    overflow-y: auto;
+  #availabilitySlotsContainer .availability-slot:hover {
+    background-color: #f9f9f9;
   }
 
+  /* --- Styles for Today's Appointments List (existing) --- */
+  .appointment-list {
+    max-height: 550px;
+    overflow-y: auto;
+  }
   .appointment-item {
     display: flex;
     align-items: center;
@@ -41,28 +44,23 @@
     border-bottom: 1px solid #f0f0f0;
     transition: background-color 0.2s ease-in-out;
   }
-
   .appointment-item:last-child {
     border-bottom: none;
   }
-
   .appointment-item:hover {
     background-color: #fcfcfc;
   }
-
   .appointment-time-status {
     text-align: center;
     margin-right: 20px;
     flex-shrink: 0;
     width: 90px;
   }
-
   .appointment-time {
     font-weight: 600;
     font-size: 1.1em;
     color: #333;
   }
-
   .appointment-status {
     display: inline-block;
     padding: 3px 10px;
@@ -74,8 +72,6 @@
     margin-top: 5px;
     white-space: nowrap;
   }
-
-  /* Status badge colors */
   .status-confirmed {
     background-color: #e0f2fe;
     color: #0c4a6e;
@@ -97,29 +93,24 @@
     background-color: #f3f4f6;
     color: #4b5563;
   }
-
   .appointment-details {
     flex-grow: 1;
   }
-
   .appointment-details h4 {
     margin: 0 0 5px 0;
     font-size: 1.1rem;
     color: #2c3e50;
     font-weight: 600;
   }
-
   .appointment-details p {
     margin: 0;
     color: #7f8c8d;
     font-size: 0.9rem;
   }
-
   .appointment-actions {
     display: flex;
     gap: 10px;
   }
-
   .btn-icon {
     background: none;
     border: 1px solid #ddd;
@@ -134,18 +125,112 @@
     transition: all 0.2s ease;
     font-size: 14px;
   }
-
   .btn-icon:hover {
     background-color: #f0f0f0;
     border-color: #ccc;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
-
   .btn-icon.btn-icon-danger:hover {
     background-color: #f8d7da;
     color: #dc3545;
     border-color: #dc3545;
+  }
+
+  /* --- NEW STYLES for FullCalendar --- */
+  #calendarView {
+    --fc-border-color: #e9ecef;
+    --fc-today-bg-color: rgba(
+      0,
+      71,
+      165,
+      0.05
+    ); /* Lighter version of primary blue */
+    font-family: "Inter", sans-serif;
+  }
+  .fc-daygrid-event {
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    border: none;
+    border-left: 4px solid var(--fc-event-border-color, #0047a5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .fc-daygrid-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0.95;
+  }
+  .fc-event-main {
+    color: #2c3e50; /* Darker text for better readability */
+  }
+  .fc-event-time {
+    font-weight: 600;
+  }
+  /* Status Colors for Calendar Events */
+  .fc-event.event-status-confirmed,
+  .fc-event.event-status-completed {
+    background-color: #e6ffed; /* Light green */
+    border-left-color: #28a745;
+  }
+  .fc-event.event-status-pending-confirmation {
+    background-color: #fff3cd; /* Light yellow */
+    border-left-color: #ffc107;
+  }
+  .fc-event.event-status-no-show {
+    background-color: #f3f4f6; /* Light gray */
+    border-left-color: #6c757d;
+  }
+  .fc-event.event-status-no-show .fc-event-main {
+    text-decoration: line-through;
+  }
+  .fc-daygrid-day-number {
+    padding: 8px !important;
+  }
+
+  /* --- NEW STYLES for View Schedule Modal --- */
+  #viewAvailabilityModal .modal-content {
+    max-width: 650px;
+  }
+  .schedule-modal-section {
+    margin-bottom: 2rem;
+  }
+  .schedule-modal-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #34495e;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .schedule-modal-section h3 i {
+    color: var(--primary-blue);
+  }
+  #dailyBookingList {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+  }
+  /* Reuse appointment item from right panel but remove actions */
+  #dailyBookingList .appointment-item {
+    padding: 12px 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  #dailyBookingList .appointment-item:last-child {
+    border-bottom: none;
+  }
+  #dailyBookingList .no-bookings-message {
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px 0;
+    text-align: center;
   }
 </style>
 {% endblock extra_style %} {% block page_title %}Booking Management{% endblock
@@ -208,7 +293,6 @@
       <h3 id="appointmentsListTitle" class="card-header-style">
         Today's Appointments
       </h3>
-      <!-- MODIFIED: Today's Appointments List -->
       <div id="appointmentList" class="appointment-list">
         {% if todays_bookings %} {% for booking in todays_bookings %}
         <div class="appointment-item" data-booking-id="{{ booking.id }}">
@@ -227,7 +311,6 @@
             <p>Service: {{ booking.service.name }}</p>
           </div>
           <div class="appointment-actions">
-            <!-- Call Button -->
             <button
               class="btn-icon btn-call-client"
               aria-label="Call Client"
@@ -236,7 +319,6 @@
             >
               <i class="fas fa-phone-alt"></i>
             </button>
-            <!-- Message Button -->
             <button
               class="btn-icon btn-message-client"
               aria-label="Message Client"
@@ -245,7 +327,6 @@
             >
               <i class="fas fa-comment-dots"></i>
             </button>
-            <!-- Edit Button -->
             <button
               class="btn-icon btn-edit-booking"
               aria-label="Edit Booking"
@@ -254,7 +335,6 @@
             >
               <i class="fas fa-edit"></i>
             </button>
-            <!-- Cancel Button -->
             <button
               class="btn-icon btn-cancel-booking btn-icon-danger"
               aria-label="Cancel Booking"
@@ -274,24 +354,42 @@
         </p>
         {% endif %}
       </div>
-      <!-- End of Modified List -->
     </div>
   </div>
 </section>
 
-<!-- New Booking Modal Removed -->
-
-<!-- View Availability Modal -->
+<!-- MODIFIED: View Schedule Modal -->
 <div id="viewAvailabilityModal" class="modal">
   <div class="modal-content">
     <span class="close-button" id="closeViewAvailabilityModal" title="Close"
       >×</span
     >
-    <h2>Availability for <span id="availabilityModalDate"></span></h2>
-    <div id="availabilitySlotsContainer" style="margin-bottom: 20px">
-      <!-- Availability slots will be loaded here by JS -->
-      <p>Loading availability...</p>
+    <h2>Schedule for <span id="availabilityModalDate"></span></h2>
+
+    <!-- Section for Scheduled Appointments -->
+    <div class="schedule-modal-section">
+      <h3>
+        <i class="fas fa-calendar-check"></i>
+        Scheduled Appointments
+      </h3>
+      <div id="dailyBookingList">
+        <!-- Bookings for the day will be loaded here by JS -->
+        <p class="no-bookings-message">Loading appointments...</p>
+      </div>
     </div>
+
+    <!-- Section for General Availability -->
+    <div class="schedule-modal-section">
+      <h3>
+        <i class="fas fa-clock"></i>
+        Business Hours & Availability
+      </h3>
+      <div id="availabilitySlotsContainer">
+        <!-- Availability slots will be loaded here by JS -->
+        <p>Loading availability...</p>
+      </div>
+    </div>
+
     <div class="form-actions" style="text-align: right">
       <a
         href="{{ url_for('business.manage_availability') }}"
@@ -309,7 +407,7 @@
   </div>
 </div>
 
-<!-- Placeholder for Edit Booking Modal (similar structure to New Booking Modal) -->
+<!-- Placeholder for Edit Booking Modal -->
 <!-- <div id="editBookingModal" class="modal"> ... </div> -->
 
 {% endblock %} {% block page_scripts %} {{ super() }}
@@ -328,9 +426,9 @@
   var getCalendarBookingsUrl =
     "{{ url_for('business.get_calendar_bookings_data') }}";
   var getAvailabilityOnDateUrl =
-    "{{ url_for('business.get_availability_for_date') }}"; // New URL
+    "{{ url_for('business.get_availability_for_date') }}";
   var cancelBookingBaseUrl = "{{ url_for('business.bookings_overview') }}"; // Base path, JS will append /<id>/cancel
-  var initialTodayISO = "{{ today_date_iso }}"; // Passed from Python route
+  var initialTodayISO = "{{ today_date_iso }}";
 </script>
 <script src="{{ url_for('static', filename='js/business/booking.js') }}"></script>
 {% endblock %}

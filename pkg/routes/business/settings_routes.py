@@ -1,8 +1,11 @@
-from flask import render_template, session, redirect, url_for, flash, request
+from flask import render_template, session, redirect, url_for, flash, request, current_app
 from . import business_bp
 from pkg.models import db, BusinessOwner, Service
 from pkg.routes.main.auth import business_owner_required
 from decimal import Decimal, InvalidOperation
+import os
+import secrets
+from werkzeug.utils import secure_filename
 
 # A categorized list of business types for use in forms
 BUSINESS_CATEGORIES = {
@@ -46,6 +49,40 @@ BUSINESS_CATEGORIES = {
     ]
 }
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def _save_service_image(file, owner):
+    """Saves a service image and returns the new filename."""
+    if not file or file.filename == '' or not allowed_file(file.filename):
+        return None
+
+    filename = secure_filename(file.filename)
+    random_hex = secrets.token_hex(6) # Using 6 random chars
+    owner_name_safe = "".join(c for c in owner.full_name if c.isalnum() or c in (' ', '_')).strip().replace(' ', '_').lower()
+    new_filename = f"{owner_name_safe}_{random_hex}.{filename.rsplit('.', 1)[1].lower()}"
+    
+    upload_path = os.path.join(current_app.root_path, 'static/uploads')
+    os.makedirs(upload_path, exist_ok=True) # Ensure directory exists
+    file.save(os.path.join(upload_path, new_filename))
+
+    return new_filename
+
+def _delete_service_image(filename):
+    """Deletes an image file from the uploads folder."""
+    if not filename:
+        return
+    try:
+        file_path = os.path.join(current_app.root_path, 'static/uploads', filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        # Log this error but don't fail the request
+        print(f"Error deleting image file {filename}: {e}")
+        flash(f'Could not delete old image file: {filename}', 'warning')
+
 
 @business_bp.route('/settings', methods=['GET'])
 @business_owner_required
@@ -70,7 +107,6 @@ def update_business_info():
     
     if owner:
         owner.business_name = request.form.get('business_name', owner.business_name)
-        # MODIFIED: Use getlist to handle multiple selections for business_type
         owner.business_type = request.form.getlist('business_type')
         owner.phone_number = request.form.get('phone_number', owner.phone_number)
         owner.full_address = request.form.get('full_address', owner.full_address)
@@ -90,29 +126,36 @@ def update_business_info():
 @business_owner_required
 def add_service():
     owner_id = session.get('user_id')
+    owner = BusinessOwner.query.get(owner_id)
     try:
         name = request.form.get('name')
         description = request.form.get('description')
-        duration_minutes = int(request.form.get('duration_minutes'))
         price = Decimal(request.form.get('price'))
 
-        if not all([name, duration_minutes, price]):
-            flash('Service Name, Duration, and Price are required.', 'error')
+        duration_str = request.form.get('duration_minutes')
+        duration_minutes = int(duration_str) if duration_str and duration_str.strip().isdigit() else None
+
+        if not name or price is None:
+            flash('Service Name and Price are required.', 'error')
             return redirect(url_for('business.settings', _anchor='services-section'))
+
+        image_file = request.files.get('image')
+        image_filename = _save_service_image(image_file, owner)
 
         new_service = Service(
             business_owner_id=owner_id,
             name=name,
             description=description,
             duration_minutes=duration_minutes,
-            price=price
+            price=price,
+            image_filename=image_filename
         )
         db.session.add(new_service)
         db.session.commit()
         flash(f'Service "{name}" added successfully!', 'success')
 
     except (ValueError, TypeError):
-        flash('Invalid input. Please ensure duration and price are numbers.', 'error')
+        flash('Invalid input. Please ensure price is a number.', 'error')
     except InvalidOperation:
          flash('Invalid price format. Please enter a valid number.', 'error')
     except Exception as e:
@@ -131,19 +174,26 @@ def edit_service(service_id):
     try:
         service.name = request.form.get('name')
         service.description = request.form.get('description')
-        service.duration_minutes = int(request.form.get('duration_minutes'))
         service.price = Decimal(request.form.get('price'))
         service.is_active = 'is_active' in request.form
-
-        if not all([service.name, service.duration_minutes, service.price]):
-             flash('Service Name, Duration, and Price are required.', 'error')
+        
+        duration_str = request.form.get('duration_minutes')
+        service.duration_minutes = int(duration_str) if duration_str and duration_str.strip().isdigit() else None
+        
+        if not all([service.name, service.price is not None]):
+             flash('Service Name and Price are required.', 'error')
              return redirect(url_for('business.settings', _anchor='services-section'))
+
+        image_file = request.files.get('image')
+        if image_file:
+            _delete_service_image(service.image_filename)
+            service.image_filename = _save_service_image(image_file, service.business_owner)
 
         db.session.commit()
         flash(f'Service "{service.name}" updated successfully!', 'success')
 
     except (ValueError, TypeError):
-        flash('Invalid input. Please ensure duration and price are numbers.', 'error')
+        flash('Invalid input. Please ensure price is a number.', 'error')
     except InvalidOperation:
          flash('Invalid price format. Please enter a valid number.', 'error')
     except Exception as e:
@@ -161,8 +211,14 @@ def delete_service(service_id):
 
     try:
         service_name = service.name
+        image_to_delete = service.image_filename
+        
         db.session.delete(service)
         db.session.commit()
+
+        # Delete the associated image file after a successful db transaction
+        _delete_service_image(image_to_delete)
+
         flash(f'Service "{service_name}" has been deleted.', 'info')
     except Exception as e:
         db.session.rollback()

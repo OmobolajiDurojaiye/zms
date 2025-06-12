@@ -2,16 +2,37 @@
 
 {% block title %}Search Results - ZITOPY{% endblock %}
 
+{% block head_extra %}
+{{ super() }}
+<style>
+  /* Styles for the new image in the modal */
+  .modal-image-container {
+    width: 100%;
+    height: 200px;
+    background-color: var(--color-background-muted);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .modal-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .modal-details-grid div[style*="display: none"] {
+      display: none !important;
+  }
+</style>
+{% endblock %}
+
+
 {% block content %}
 <div class="search-results-page">
   <!-- Filter Sidebar -->
   <aside class="filter-sidebar">
     <h3>Filters</h3>
     <form id="searchForm" action="{{ url_for('users.search_results') }}" method="GET">
-        <!-- ##### FIX APPLIED HERE: Added CSRF token for JS to use in AJAX requests ##### -->
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <!-- Hidden inputs to preserve search term and sorting -->
         <input type="hidden" name="q" value="{{ search_params.q or '' }}">
         <input type="hidden" name="sortBy" id="sortByInput" value="{{ search_params.sortBy or 'relevance' }}">
         
@@ -41,7 +62,6 @@
             <label for="dateFilter">Date</label>
             <input type="date" id="dateFilter" name="date" class="filter-input-sidebar" value="{{ search_params.date or '' }}">
         </div>
-        <!-- Time filter is better handled in the modal, so we omit it here for a cleaner UX -->
     </form>
   </aside>
 
@@ -70,9 +90,11 @@
             {% for service in results %}
             <div class="service-card" data-service-id="{{ service.id }}" role="button" tabindex="0">
                 <div class="card-image-container">
-                    <img src="{{ service.image_url or url_for('static', filename='images/placeholder.webp') }}" alt="{{ service.name }}" class="card-image">
+                    <!-- MODIFIED: Simplified src to use the reliable image_url from the backend -->
+                    <img src="{{ service.image_url }}" alt="{{ service.name }}" class="card-image">
                     <div class="card-image-overlay">
-                        <span class="card-price">${{ "%.2f"|format(service.price|float) }}</span>
+                        <!-- MODIFIED: Changed currency to Naira -->
+                        <span class="card-price">₦{{ "%.2f"|format(service.price|float) }}</span>
                         <button class="favorite-btn"><i class="far fa-heart"></i></button>
                     </div>
                 </div>
@@ -89,10 +111,15 @@
                     </div>
                     <h3 class="card-title">{{ service.name }}</h3>
                     <div class="card-business-info"><i class="fas fa-store-alt"></i> <span>{{ service.business.name }}</span></div>
-                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> <span>{{ service.business.lga_province or '' }}, {{ service.business.state }}</span></div>
+                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> <span>{{ service.business.state }}</span></div>
                 </div>
                 <div class="card-footer">
+                    <!-- MODIFIED: Conditionally display duration -->
+                    {% if service.duration_minutes %}
                     <span class="card-duration"><i class="far fa-clock"></i> {{ service.duration_minutes }} min</span>
+                    {% else %}
+                    <span></span> <!-- to maintain alignment -->
+                    {% endif %}
                     <span class="card-action-btn-text">View & Book <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
@@ -132,13 +159,17 @@
         <div class="spinner"></div>
     </div>
     <div id="modalBody" class="modal-body" style="display: none;">
-      <!-- Content will be populated by JS -->
       <div class="modal-left">
+          <!-- NEW: Image container for the modal -->
+          <div class="modal-image-container">
+            <img id="modalServiceImage" src="" alt="Service Image">
+          </div>
           <h2 id="modalServiceName" class="modal-title"></h2>
           <p id="modalServiceDescription"></p>
           <div class="modal-details-grid">
               <div><i class="fas fa-tag"></i> <strong id="modalServicePrice"></strong></div>
-              <div><i class="far fa-clock"></i> <strong id="modalServiceDuration"></strong></div>
+              <!-- MODIFIED: Added container for conditional display -->
+              <div id="modalDurationContainer"><i class="far fa-clock"></i> <strong id="modalServiceDuration"></strong></div>
           </div>
           <hr>
           <h4>Provided by</h4>
@@ -156,9 +187,7 @@
                 <div class="loading-dots"><span></span><span></span><span></span></div>
                 <span>Checking availability...</span>
              </div>
-             <div id="timeSlotsContainer" class="time-slots-container">
-                <!-- Time slots will be injected here -->
-             </div>
+             <div id="timeSlotsContainer" class="time-slots-container"></div>
              <p id="timeSlotsMessage" class="time-slots-message">Please select a date to see available times.</p>
           </div>
           <button id="bookNowBtn" class="book-now-btn-modal" disabled>

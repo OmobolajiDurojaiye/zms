@@ -1,20 +1,12 @@
-/* === ZITOPY - MODERN SETTINGS PAGE STYLES === */
-/* This file extends dashboard.css with styles specific to the settings page.
-   It prioritizes clarity, consistency, and a clean, light user experience
-   that seamlessly integrates with the main dashboard aesthetic. */
-
-/* Main container for the settings layout (nav + content) */
 .settings-container {
   display: flex;
   align-items: flex-start;
-  gap: 2.5rem; /* Generous spacing between navigation and content */
+  gap: 2.5rem;
 }
 
-/* Settings Side Navigation */
 .settings-nav {
-  flex: 0 0 240px; /* Fixed width for the navigation panel */
+  flex: 0 0 240px;
   position: sticky;
-  /* Sticks below the main header with a comfortable margin */
   top: calc(var(--header-height) + 2rem);
 }
 
@@ -57,31 +49,27 @@
   border-left-color: var(--primary-blue);
 }
 
-/* Settings Content Area */
 .settings-content {
-  flex-grow: 1; /* Takes up the remaining space */
-  min-width: 0; /* Prevents content from overflowing the container */
+  flex-grow: 1;
+  min-width: 0;
 }
 
-/* Individual sections within the content area */
 .settings-section {
   display: none;
-  animation: fadeIn 0.4s ease-in-out; /* Uses animation from dashboard.css */
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 .settings-section.active {
   display: block;
 }
 
-/* Card: The primary container for settings blocks.
-     We reuse the .card styles from dashboard.css and add structure. */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
   margin-bottom: 2.5rem;
-  overflow: hidden; /* Ensures child elements respect the border radius */
+  overflow: hidden;
 }
 
 .card-header,
@@ -120,7 +108,6 @@
   margin: 0 0 1.5rem 0;
 }
 
-/* Form Styles, inheriting from dashboard.css for consistency */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -135,7 +122,12 @@
   border-top: 1px solid var(--border-color-light);
 }
 
-/* Checkbox specific styling */
+.optional-text {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
 .form-group-checkbox {
   display: flex;
   align-items: center;
@@ -145,12 +137,14 @@
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color-light);
 }
+
 .form-group-checkbox input[type="checkbox"] {
   width: 1.15rem;
   height: 1.15rem;
   accent-color: var(--primary-blue);
   cursor: pointer;
 }
+
 .form-group-checkbox label {
   margin-bottom: 0;
   color: var(--text-primary);
@@ -158,7 +152,7 @@
   cursor: pointer;
 }
 
-/* Service List Styles - Clean & Scannable */
+/* Service List Styles */
 .service-list {
   list-style: none;
   padding: 0;
@@ -168,17 +162,36 @@
 .service-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1.25rem;
   padding: 1.25rem 0;
   border-bottom: 1px solid var(--border-color-light);
 }
+
 .service-list > li:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
+
 .service-list > li:first-child {
   padding-top: 0;
+}
+
+.service-image-container {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background-color: var(--bg-main);
+}
+.service-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.service-info {
+  flex-grow: 1;
 }
 
 .service-info .service-name {
@@ -188,11 +201,13 @@
   display: block;
   margin-bottom: 0.25rem;
 }
+
 .service-info .service-meta {
   font-size: 0.875rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
+
 .service-info .service-desc {
   margin-top: 0.5rem;
   font-size: 0.875rem;
@@ -204,20 +219,99 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  flex-shrink: 0; /* Prevents actions from shrinking on small screens */
+  flex-shrink: 0;
 }
 
-/* Status Badges reusing dashboard styles */
 .status-badge.status-active {
   background-color: rgba(40, 167, 69, 0.1);
   color: var(--accent-green);
 }
+
 .status-badge.status-inactive {
   background-color: rgba(108, 117, 125, 0.1);
   color: var(--text-secondary);
 }
 
-/* Placeholder for empty states (e.g., no services) */
+/* Modern Duration Input */
+.duration-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+/* .duration-input-group input[type="number"] {
+} */
+
+.duration-presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.btn-preset {
+  background-color: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-preset:hover {
+  background-color: var(--primary-blue);
+  color: var(--text-white);
+  transform: translateY(-1px);
+}
+
+/* Image Upload Component Styles */
+.image-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background-color: var(--bg-main);
+  padding: 1rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color-light);
+}
+.image-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--border-radius-md);
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+  flex-shrink: 0;
+}
+.image-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.file-input-hidden {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+.file-input-hidden + label {
+  /* Use .btn-secondary styles from dashboard.css */
+  display: inline-block; /* Make it behave like a button */
+  cursor: pointer;
+  margin-bottom: 0;
+  text-align: center;
+  width: fit-content;
+}
+.file-name-display {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
 .placeholder-box {
   background-color: var(--bg-main);
   padding: 2.5rem;
@@ -227,80 +321,74 @@
   color: var(--text-secondary);
 }
 
-/* Placeholder for sections that are 'coming soon' */
 .placeholder-content {
-  /* This uses the beautiful placeholder style from dashboard.css */
   min-height: 50vh;
 }
 
-/* --- Responsive Design for a Flawless Experience on All Devices --- */
-
-/* For tablets and smaller devices */
+/* --- Responsive Design --- */
 @media (max-width: 991px) {
   .settings-container {
     flex-direction: column;
     gap: 1.5rem;
   }
-
   .settings-nav {
-    position: static; /* Unstick the nav */
+    position: static;
     width: 100%;
     display: flex;
     border-bottom: 2px solid var(--border-color);
     padding-bottom: 0;
-    overflow-x: auto; /* Allow horizontal scrolling for nav items */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
-
   .settings-nav::-webkit-scrollbar {
     height: 3px;
   }
-
   .settings-nav-item {
-    margin-bottom: -2px; /* Pull item down to overlap container's border */
+    margin-bottom: -2px;
     border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
     border-left: none;
     border-bottom: 3px solid transparent;
-    white-space: nowrap; /* Prevent nav item text from wrapping */
+    white-space: nowrap;
     flex-shrink: 0;
-    transform: none !important; /* Reset hover transform */
+    transform: none !important;
   }
-
   .settings-nav-item.active {
     border-color: transparent transparent var(--primary-blue) transparent;
-    background-color: var(--bg-card); /* Lifts it 'above' the content area */
+    background-color: var(--bg-card);
   }
 }
 
-/* For mobile devices */
 @media (max-width: 767px) {
   .card-header,
   .card-body,
   .card-footer {
     padding: 1.25rem;
   }
-
   .form-row {
     grid-template-columns: 1fr;
-    gap: 0; /* Gap is handled by form-group margin */
+    gap: 0;
   }
-
   .service-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-
   .service-actions {
     width: 100%;
-    justify-content: flex-end; /* Push buttons to the right */
+    justify-content: flex-end;
   }
-
   .form-actions {
     flex-direction: column;
     gap: 0.75rem;
   }
   .form-actions .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-upload-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

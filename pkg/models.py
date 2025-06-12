@@ -1,3 +1,4 @@
+from flask import url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, time as dt_time, date as dt_date
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -156,14 +157,23 @@ class Service(db.Model):
     business_owner_id = db.Column(db.Integer, db.ForeignKey('business_owners.id'), nullable=False)
     name = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    duration_minutes = db.Column(db.Integer, nullable=False) # e.g., 30, 60, 90
+    duration_minutes = db.Column(db.Integer, nullable=True) # MODIFIED: Made optional
     price = db.Column(db.Numeric(10, 2), nullable=False)
+    image_filename = db.Column(db.String(255), nullable=True) # NEW: For storing the image file name
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     business_owner = db.relationship('BusinessOwner', backref=db.backref('services', lazy='select'))
     # Relationship 'all_bookings' is defined in Booking model via backref
+
+    @property
+    def image_url(self):
+        """Returns the full URL for the service image, or a placeholder."""
+        if self.image_filename:
+            return url_for('static', filename=f'uploads/{self.image_filename}')
+        # Return a URL to a default placeholder image
+        return url_for('static', filename='images/placeholder-service.png')
 
     def __repr__(self):
         return f'<Service {self.name} (Owner ID: {self.business_owner_id})>'
@@ -177,6 +187,7 @@ class Service(db.Model):
             'duration_minutes': self.duration_minutes,
             'price': str(self.price) if self.price is not None else None,
             'is_active': self.is_active,
+            'image_url': self.image_url, # NEW: Added image url
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
         }
@@ -205,10 +216,10 @@ class Service(db.Model):
             'price': str(self.price) if self.price is not None else None,
             'is_active': self.is_active,
             'business': business_details,
+            'image_url': self.image_url, # UPDATED: Use the property
             # Placeholders - these would typically come from aggregated data or other models
             'avg_rating': 4.5, # Placeholder
             'rating_count': 120, # Placeholder
-            'image_url': None, # Placeholder - you might add an image field or derive one
         }
 
 class Booking(db.Model):

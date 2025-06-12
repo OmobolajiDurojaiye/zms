@@ -162,16 +162,19 @@ def get_calendar_bookings_data():
 
         calendar_events = []
         for booking in bookings_raw:
-            event_title = f"{booking.service.name} - {booking.client_display_name}"
+            event_title = f"{booking.client_display_name}" # Simplified title
             calendar_events.append({
                 'id': str(booking.id),
                 'title': event_title,
                 'start': booking.start_datetime.isoformat(),
                 'end': booking.end_datetime.isoformat(),
                 'status': booking.status,
-                'serviceName': booking.service.name,
-                'clientName': booking.client_display_name,
-                'notes': booking.notes_owner, # Or combined notes as needed
+                'extendedProps': { # Store extra data here for FullCalendar v5+
+                    'serviceName': booking.service.name,
+                    'clientName': booking.client_display_name,
+                    'notes': booking.notes_owner,
+                    'status': booking.status
+                },
                 'className': f'event-status-{booking.status.lower().replace("_", "-")}' # For custom styling
             })
         return jsonify(calendar_events)
@@ -487,6 +490,17 @@ def get_availability_for_date():
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid date format. Please use YYYY-MM-DD.'}), 400
 
+    # MODIFIED: Fetch bookings for the day, to be included in every response.
+    start_of_day = datetime.combine(target_date, dt_time.min)
+    end_of_day = datetime.combine(target_date, dt_time.max)
+    todays_bookings_query = Booking.query.filter(
+        Booking.business_owner_id == owner.id,
+        Booking.start_datetime.between(start_of_day, end_of_day),
+        Booking.status.notin_(['cancelled_by_owner', 'cancelled_by_client'])
+    ).options(db.joinedload(Booking.service)).order_by(Booking.start_datetime.asc()).all()
+    bookings_data = [b.to_dict(include_service=True) for b in todays_bookings_query]
+
+
     # 1. Check for specific date overrides for the target_date
     specific_overrides = BusinessAvailability.query.filter(
         BusinessAvailability.business_owner_id == owner.id,
@@ -494,25 +508,23 @@ def get_availability_for_date():
     ).order_by(BusinessAvailability.start_time.asc()).all()
 
     if specific_overrides:
-        # If there's any override, it takes precedence.
-        # Check if one of them is a 'blocked_override' type, which usually means the whole day is blocked.
         if any(slot.slot_type == 'blocked_override' for slot in specific_overrides):
-            # Typically, a 'blocked_override' would be a single slot covering the day.
-            # We return all slots found for that day, but the presence of 'blocked_override' signals unavailability.
             return jsonify({
                 'success': True,
                 'date': date_str,
                 'type': 'specific_override_blocked',
-                'message': f'This day ({target_date.strftime("%A, %b %d, %Y")}) is specifically set as unavailable/blocked.',
-                'slots': [slot.to_dict() for slot in specific_overrides] # Could be one full day slot or more if misconfigured
+                'message': f'This day ({target_date.strftime("%A, %b %d")}) is set as unavailable/blocked.',
+                'slots': [slot.to_dict() for slot in specific_overrides],
+                'bookings': bookings_data
             })
-        else: # Custom hours (available/break slots) for this specific date
+        else: # Custom hours
             return jsonify({
                 'success': True,
                 'date': date_str,
                 'type': 'specific_override_custom_hours',
-                'message': f'Custom availability for {target_date.strftime("%A, %b %d, %Y")}:',
-                'slots': [slot.to_dict() for slot in specific_overrides]
+                'message': f'Custom availability for {target_date.strftime("%A, %b %d")}:',
+                'slots': [slot.to_dict() for slot in specific_overrides],
+                'bookings': bookings_data
             })
 
     # 2. If no specific overrides, fall back to the weekly schedule
@@ -529,15 +541,17 @@ def get_availability_for_date():
             'date': date_str,
             'day_of_week': day_of_week_num,
             'type': 'weekly_schedule',
-            'message': f'Weekly availability for {target_date.strftime("%A, %b %d, %Y")}:',
-            'slots': [slot.to_dict() for slot in weekly_slots]
+            'message': f'Weekly availability for {target_date.strftime("%A, %b %d")}:',
+            'slots': [slot.to_dict() for slot in weekly_slots],
+            'bookings': bookings_data
         })
-    else: # No weekly slots defined for this day of the week, so it's considered closed.
+    else: # No weekly slots defined, so it's closed.
         return jsonify({
             'success': True,
             'date': date_str,
             'day_of_week': day_of_week_num,
             'type': 'weekly_closed',
-            'message': f'{target_date.strftime("%A, %b %d, %Y")} is closed according to the weekly schedule (no hours defined).',
-            'slots': []
+            'message': f'{target_date.strftime("%A, %b %d")} is closed according to the weekly schedule.',
+            'slots': [],
+            'bookings': bookings_data
         })

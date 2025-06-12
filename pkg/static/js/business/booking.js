@@ -1,10 +1,6 @@
 "use strict";
 document.addEventListener("DOMContentLoaded", function () {
-  // Removed variables related to New Booking Modal:
-  // newBookingBtn, newBookingModal, closeNewBookingModalBtn,
-  // cancelNewBookingModalBtn, newBookingForm, newBookingErrorDiv, bookingDateInput (specific one from new booking modal)
-
-  // New View Availability Modal elements
+  // --- Modal Elements ---
   const viewAvailabilityModal = document.getElementById(
     "viewAvailabilityModal"
   );
@@ -20,8 +16,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const availabilitySlotsContainer = document.getElementById(
     "availabilitySlotsContainer"
   );
+  // MODIFIED: Add a handle for the new booking list container in the modal
+  const dailyBookingListContainer = document.getElementById("dailyBookingList");
 
-  // Generic Modal Handling
+  // --- Generic Modal Handling ---
   function openModal(modal) {
     if (modal) {
       modal.style.display = "block";
@@ -65,20 +63,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Function to open and populate View Availability Modal
+  // --- MODIFIED: Function to open and populate View Schedule Modal ---
   function openViewAvailabilityModal(dateStr) {
     if (
       !viewAvailabilityModal ||
       !availabilityModalDateSpan ||
-      !availabilitySlotsContainer
+      !availabilitySlotsContainer ||
+      !dailyBookingListContainer
     )
       return;
 
     const formattedDate = dayjs(dateStr).format("dddd, MMMM D, YYYY");
     availabilityModalDateSpan.textContent = formattedDate;
+
+    // Reset both containers to a loading state
     availabilitySlotsContainer.innerHTML = "<p>Loading availability...</p>";
+    dailyBookingListContainer.innerHTML =
+      '<p class="no-bookings-message">Loading appointments...</p>';
+
     openModal(viewAvailabilityModal);
 
+    // Fetch both availability and bookings for the given date
     fetch(`${getAvailabilityOnDateUrl}?date=${dateStr}`)
       .then((response) => {
         if (!response.ok) {
@@ -88,7 +93,8 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then((data) => {
         if (data.success) {
-          availabilitySlotsContainer.innerHTML = ""; // Clear loading
+          // --- 1. Populate Availability Slots ---
+          availabilitySlotsContainer.innerHTML = ""; // Clear loading message
 
           if (data.message) {
             const messageP = document.createElement("p");
@@ -103,16 +109,13 @@ document.addEventListener("DOMContentLoaded", function () {
               slotDiv.classList.add(
                 `type-${slot.slot_type.toLowerCase().replace("_", "-")}`
               );
-
               const timeSpan = document.createElement("span");
               timeSpan.textContent = `${slot.start_time} - ${slot.end_time}`;
-
               const typeText = document.createTextNode(
                 ` (${slot.slot_type
                   .replace("_", " ")
                   .replace(/\b\w/g, (l) => l.toUpperCase())})`
               );
-
               slotDiv.appendChild(timeSpan);
               slotDiv.appendChild(typeText);
               availabilitySlotsContainer.appendChild(slotDiv);
@@ -121,26 +124,69 @@ document.addEventListener("DOMContentLoaded", function () {
             !data.message &&
             (!data.slots || data.slots.length === 0)
           ) {
-            // If no slots and no specific message (e.g. weekly_closed already showed message)
             const noSlotsP = document.createElement("p");
             noSlotsP.classList.add("no-availability");
             noSlotsP.textContent =
               "No specific availability slots defined for this day.";
             availabilitySlotsContainer.appendChild(noSlotsP);
           }
+
+          // --- 2. Populate Daily Bookings List ---
+          dailyBookingListContainer.innerHTML = ""; // Clear loading message
+
+          if (data.bookings && data.bookings.length > 0) {
+            data.bookings.forEach((booking) => {
+              const itemDiv = document.createElement("div");
+              itemDiv.className = "appointment-item";
+              itemDiv.dataset.bookingId = booking.id;
+
+              const startTime = dayjs(booking.start_datetime).format("hh:mm A");
+              const statusClass = booking.status
+                .toLowerCase()
+                .replace(/_/g, "-");
+              const statusText = booking.status
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase());
+
+              // Simple display for the modal - no action buttons
+              itemDiv.innerHTML = `
+                <div class="appointment-time-status">
+                  <div class="appointment-time">${startTime}</div>
+                  <span class="appointment-status status-${statusClass}">${statusText}</span>
+                </div>
+                <div class="appointment-details">
+                  <h4>${booking.client_display_name}</h4>
+                  <p>Service: ${
+                    booking.service ? booking.service.name : "N/A"
+                  }</p>
+                </div>
+              `;
+              dailyBookingListContainer.appendChild(itemDiv);
+            });
+          } else {
+            const noBookingsP = document.createElement("p");
+            noBookingsP.className = "no-bookings-message";
+            noBookingsP.textContent = "No appointments scheduled for this day.";
+            dailyBookingListContainer.appendChild(noBookingsP);
+          }
         } else {
-          availabilitySlotsContainer.innerHTML = `<p class="form-error-message">Error: ${
-            data.message || "Could not fetch availability."
+          // Handle fetch error
+          const errorMessage = `<p class="form-error-message">Error: ${
+            data.message || "Could not fetch schedule."
           }</p>`;
+          availabilitySlotsContainer.innerHTML = errorMessage;
+          dailyBookingListContainer.innerHTML = errorMessage;
         }
       })
       .catch((error) => {
-        console.error("Error fetching availability:", error);
-        availabilitySlotsContainer.innerHTML = `<p class="form-error-message">A network error occurred. Please try again.</p>`;
+        console.error("Error fetching daily schedule:", error);
+        const networkError = `<p class="form-error-message">A network error occurred. Please try again.</p>`;
+        availabilitySlotsContainer.innerHTML = networkError;
+        dailyBookingListContainer.innerHTML = networkError;
       });
   }
 
-  // FullCalendar Integration
+  // --- FullCalendar Integration ---
   const calendarEl = document.getElementById("calendarView");
   let calendar;
 
@@ -148,7 +194,7 @@ document.addEventListener("DOMContentLoaded", function () {
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: "dayGridMonth",
       headerToolbar: false, // Custom header controls are used
-      height: "auto", // Adjusts height to content
+      height: "auto",
       events: {
         url: getCalendarBookingsUrl,
         failure: function (error) {
@@ -166,33 +212,17 @@ document.addEventListener("DOMContentLoaded", function () {
       editable: false,
       selectable: true,
       selectMirror: true,
+      // MODIFIED: Open schedule modal on day click
       select: function (info) {
-        // MODIFIED: Open View Availability Modal instead of New Booking Modal
         const selectedDate = dayjs(info.start).format("YYYY-MM-DD");
         openViewAvailabilityModal(selectedDate);
         calendar.unselect();
       },
+      // MODIFIED: Open schedule modal on event click
       eventClick: function (info) {
-        // Existing eventClick logic for showing booking details
-        let details = `Service: ${
-          info.event.extendedProps.serviceName || info.event.title
-        }\n`;
-        details += `Client: ${info.event.extendedProps.clientName || "N/A"}\n`;
-        details += `Time: ${dayjs(info.event.start).format("h:mm A")} - ${dayjs(
-          info.event.end
-        ).format("h:mm A")}\n`;
-        details += `Status: ${
-          info.event.extendedProps.status
-            ? info.event.extendedProps.status
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())
-            : "N/A"
-        }\n`;
-        if (info.event.extendedProps.notes) {
-          details += `Notes: ${info.event.extendedProps.notes}\n`;
-        }
-        alert(details);
-        // TODO: Implement edit booking modal if needed, triggered differently
+        info.jsEvent.preventDefault(); // Prevent default link behavior
+        const selectedDate = dayjs(info.event.start).format("YYYY-MM-DD");
+        openViewAvailabilityModal(selectedDate);
       },
       dayMaxEvents: true, // True: allow "more" link when too many events
     });
@@ -235,13 +265,12 @@ document.addEventListener("DOMContentLoaded", function () {
     console.warn("Calendar element #calendarView not found.");
   }
 
-  // MODIFIED: Appointment Actions (Call, Message, Cancel, Edit)
+  // --- Appointment Action Buttons (for the right-side list) ---
   document.querySelectorAll(".btn-call-client").forEach((button) => {
     button.addEventListener("click", function (e) {
-      e.stopPropagation(); // Prevent triggering other click events on the parent
+      e.stopPropagation();
       const phone = this.dataset.phone;
       if (phone) {
-        // A simple alert is used for now. On mobile, `window.location.href = 'tel:' + phone;` could be used.
         alert(`Client Phone: ${phone}`);
       } else {
         alert("Client phone number not available.");
@@ -255,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const email = this.dataset.email;
       if (email) {
         alert(
-          `Client Email: ${email}\n\n(This will trigger the messaging/email feature in the future)`
+          `Client Email: ${email}\n\n(This will trigger the messaging feature in the future)`
         );
       } else {
         alert("Client email not available.");
@@ -320,29 +349,4 @@ document.addEventListener("DOMContentLoaded", function () {
       // TODO: Implement edit booking modal and functionality
     });
   });
-
-  // Function to update appointment list (e.g., after a cancellation) - kept as is
-  function updateAppointmentListIfEmpty() {
-    const appointmentList = document.getElementById("appointmentList");
-    if (
-      (appointmentList && appointmentList.children.length === 0) ||
-      (appointmentList.children.length === 1 &&
-        appointmentList.children[0].classList.contains("no-appointments"))
-    ) {
-      // If list is empty or only contains the "no appointments" message
-      if (appointmentList.querySelector(".no-appointments") === null) {
-        appointmentList.innerHTML =
-          '<p class="no-appointments">No appointments scheduled for today.</p>';
-      }
-    }
-  }
-
-  // TODO: Implement appointment list filtering based on bookingDateFilter dropdown
-  // const bookingDateFilter = document.getElementById('bookingDateFilter');
-  // if (bookingDateFilter) {
-  //     bookingDateFilter.addEventListener('change', function() {
-  //         const filterValue = this.value;
-  //         alert(`Filter changed to: ${filterValue}. Dynamic list update is a TODO.`);
-  //     });
-  // }
 });

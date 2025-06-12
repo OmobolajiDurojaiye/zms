@@ -1,9 +1,8 @@
-from pkg import create_app
+from pkg import create_app, socketio
 
 app = create_app()
 
-application = app
+application = app 
 
 if __name__ == '__main__':
-    app.config.from_pyfile("config.py")
-    app.run(debug=True, host='0.0.0.0', port=3600)
+    socketio.run(app, debug=True, host='0.0.0.0', port=3600)
