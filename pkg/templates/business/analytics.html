@@ -1,26 +1,141 @@
-{% extends "business/dashboard.html" %} {% block page_title %}Performance
-Analytics{% endblock %} {% block header_quick_actions %}
-<button class="btn btn-secondary">
-  <i class="fas fa-file-export"></i>
-  Export Report
-</button>
+{% extends "business/dashboard.html" %} {% block page_title %}Customer
+Analytics{% endblock %} {% block extra_style %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/business/analytics.css') }}"
+/>
+{% endblock extra_style %} {% block header_quick_actions %}
+<div class="date-range-picker">
+  <button class="btn btn-secondary" disabled>
+    <i class="fas fa-calendar-alt"></i>
+    <span>All Time</span>
+  </button>
+  <button class="btn btn-secondary">
+    <i class="fas fa-file-export"></i>
+    Export Report
+  </button>
+</div>
 {% endblock %} {% block page_content %}
 <section id="analytics" class="content-section active">
-  <div class="placeholder-content">
-    <i class="fas fa-chart-line placeholder-icon"></i>
-    <h3>Track Your Performance</h3>
-    <p>
-      Detailed analytics, sales trends, and customer insights will be displayed
-      here. This content is from analytics.html.
-    </p>
-    <button class="btn btn-secondary">
-      <i class="fas fa-cogs"></i> Customize View
-    </button>
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon customers"><i class="fas fa-users"></i></div>
+      <div class="stat-content">
+        <h3>Total Customers</h3>
+        <div class="stat-value">{{ stats.total_customers }}</div>
+        <div class="stat-change positive">All registered clients</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon bookings"><i class="fas fa-user-plus"></i></div>
+      <div class="stat-content">
+        <h3>New Customers</h3>
+        <div class="stat-value">{{ stats.new_customers_30_days }}</div>
+        <div class="stat-change">In the last 30 days</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon revenue">
+        <i class="fas fa-hand-holding-usd"></i>
+      </div>
+      <div class="stat-content">
+        <h3>Avg. Spend</h3>
+        <div class="stat-value">₦{{ "{:,.2f}".format(stats.avg_spend) }}</div>
+        <div class="stat-change">Per customer</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon inventory"><i class="fas fa-sync-alt"></i></div>
+      <div class="stat-content">
+        <h3>Repeat Rate</h3>
+        <div class="stat-value">{{ stats.repeat_customer_rate }}%</div>
+        <div class="stat-change">Customers with >1 booking</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Analytics Grid -->
+  <div class="analytics-grid">
+    <div class="analytics-card large">
+      <h3 class="card-header">
+        New Customer Growth <small>(Last 6 Months)</small>
+      </h3>
+      <div class="chart-wrapper">
+        <canvas id="newCustomersChart"></canvas>
+      </div>
+    </div>
+    <div class="analytics-card">
+      <h3 class="card-header">Top Customers <small>(By Revenue)</small></h3>
+      <div class="customer-list">
+        {% if top_customers %} {% for customer in top_customers %}
+        <div class="customer-list-item">
+          <div class="customer-info">
+            <div class="customer-avatar">{{ customer.avatar_initials }}</div>
+            <div class="customer-details">
+              <h4>{{ customer.name }}</h4>
+              <span>{{ customer.booking_count }} bookings</span>
+            </div>
+          </div>
+          <div class="customer-stat">
+            <span>₦{{ "{:,.0f}".format(customer.total_spent) }}</span>
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <div class="list-placeholder">
+          <i class="fas fa-trophy"></i>
+          <p>Your top customers will appear here once they make bookings.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Analytics Grid -->
+  <div class="analytics-grid">
+    <div class="analytics-card">
+      <h3 class="card-header">Recently Joined Customers</h3>
+      <div class="customer-list">
+        {% if recent_customers %} {% for customer in recent_customers %}
+        <div class="customer-list-item">
+          <div class="customer-info">
+            <div class="customer-avatar recent">
+              {{ customer.avatar_initials }}
+            </div>
+            <div class="customer-details">
+              <h4>{{ customer.name }}</h4>
+              <span>Joined {{ customer.joined_at_display }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <div class="list-placeholder">
+          <i class="fas fa-user-clock"></i>
+          <p>New customers who book an appointment will be listed here.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="analytics-card">
+      <h3 class="card-header">Customer Demographics <small>(Gender)</small></h3>
+      <div class="chart-wrapper">
+        <canvas id="genderDemographicsChart"></canvas>
+      </div>
+    </div>
   </div>
 </section>
 {% endblock %} {% block page_scripts %} {{ super() }}
-<!-- <script src="{{ url_for('static', filename='js/business/analytics.js') }}"></script> -->
+<!-- Chart.js library for creating beautiful charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-  console.log("Analytics page specific JS loaded.");
+  // Pass data from Flask/Jinja2 to JavaScript in a safe way
+  const genderChartData = JSON.parse(
+    "{{ gender_chart_data_json | tojson | safe }}"
+  );
+  const newCustomersChartData = JSON.parse(
+    "{{ new_customers_chart_data_json | tojson | safe }}"
+  );
 </script>
+
+<script src="{{ url_for('static', filename='js/business/analytics.js') }}"></script>
 {% endblock %}

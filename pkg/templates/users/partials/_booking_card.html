@@ -1,0 +1,54 @@
+<div
+  class="booking-card status-{{ booking.status | lower | replace('_', '-') }}"
+  data-booking-id="{{ booking.id }}"
+  data-owner-id="{{ booking.business_owner.id }}"
+>
+  <div class="card-header">
+    <div class="business-info">
+      <div class="business-avatar">
+        {{ booking.business_owner.business_name[0] | upper }}
+      </div>
+      <span class="business-name"
+        >{{ booking.business_owner.business_name }}</span
+      >
+    </div>
+    <span class="booking-status"
+      >{{ booking.status | title | replace('_', ' ') }}</span
+    >
+  </div>
+  <div class="card-body">
+    <h4 class="service-name">{{ booking.service.name }}</h4>
+    <div class="booking-details">
+      <div class="detail-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span>{{ booking.start_datetime.strftime('%A, %B %d, %Y') }}</span>
+      </div>
+      <div class="detail-item">
+        <i class="fas fa-clock"></i>
+        <span
+          >{{ booking.start_datetime.strftime('%I:%M %p') }} - {{
+          booking.end_datetime.strftime('%I:%M %p') }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="card-price-tag">
+    <span>₦{{ "%.2f"|format(booking.service.price) }}</span>
+  </div>
+  <div class="card-footer">
+    <button class="btn btn-secondary btn-sm btn-view-details">
+      <i class="fas fa-info-circle"></i> Details
+    </button>
+    <button class="btn btn-primary btn-sm btn-message">
+      <i class="fas fa-comment-dots"></i> Message {% if booking.unread_messages
+      > 0 %}
+      <span class="unread-badge">{{ booking.unread_messages }}</span>
+      {% endif %}
+    </button>
+    {% if booking.status == 'confirmed' %}
+    <button class="btn btn-danger-outline btn-sm btn-cancel">
+      <i class="fas fa-times-circle"></i> Cancel
+    </button>
+    {% endif %}
+  </div>
+</div>

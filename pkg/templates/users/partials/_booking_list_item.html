@@ -1,0 +1,29 @@
+<div
+  class="booking-list-item status-{{ booking.status | lower | replace('_', '-') }}"
+  data-booking-id="{{ booking.id }}"
+  data-owner-id="{{ booking.business_owner.id }}"
+  data-business-name="{{ booking.business_owner.business_name }}"
+  data-service-name="{{ booking.service.name }}"
+  data-date="{{ booking.start_datetime.strftime('%A, %B %d, %Y') }}"
+  data-time="{{ booking.start_datetime.strftime('%I:%M %p') }} - {{ booking.end_datetime.strftime('%I:%M %p') }}"
+  data-price="{{ '%.2f'|format(booking.service.price) }}"
+  data-status="{{ booking.status | title | replace('_', ' ') }}"
+  data-status-raw="{{ booking.status }}"
+  data-unread="{{ booking.unread_messages }}"
+>
+  <div class="item-main-info">
+    <div class="item-business-name">
+      {{ booking.business_owner.business_name }}
+    </div>
+    <div class="item-service-name">{{ booking.service.name }}</div>
+    <div class="item-date">
+      <i class="fas fa-calendar-alt"></i> {{ booking.start_datetime.strftime('%b
+      %d, %Y') }}
+    </div>
+  </div>
+  {% if booking.unread_messages > 0 %}
+  <div class="item-unread-badge">
+    <span>{{ booking.unread_messages }}</span>
+  </div>
+  {% endif %}
+</div>

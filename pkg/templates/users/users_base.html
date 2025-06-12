@@ -42,7 +42,10 @@
             <i class="fas fa-home"></i>
             <span>Home</span>
           </a>
-          <a href="#" class="nav-link">
+          <a
+            href="{{ url_for('users.my_bookings') }}"
+            class="nav-link {% if request.endpoint == 'users.my_bookings' %}active{% endif %}"
+          >
             <i class="fas fa-calendar-check"></i>
             <span>My Bookings</span>
           </a>

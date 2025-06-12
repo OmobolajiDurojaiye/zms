@@ -1,26 +1,140 @@
 {% extends "business/dashboard.html" %} {% block page_title %}Customer
-Management{% endblock %} {% block header_quick_actions %}
-<button class="btn btn-primary">
-  <i class="fas fa-user-plus"></i>
-  Add Customer
-</button>
-{% endblock %} {% block page_content %}
-<section id="customers" class="content-section active">
-  <div class="placeholder-content">
-    <i class="fas fa-users placeholder-icon"></i>
-    <h3>Manage Your Customers</h3>
-    <p>
-      Customer profiles, history, and communication tools will be available
-      here. This content is from customers.html.
-    </p>
-    <button class="btn btn-secondary">
-      <i class="fas fa-info-circle"></i> Learn More
-    </button>
+Messaging{% endblock %} {% block page_styles %} {{ super() }} {% block
+extra_style %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/business/customers.css') }}"
+/>
+{% endblock extra_style %} {% endblock %} {% block header_quick_actions %}{%
+endblock %} {% block page_content %}
+<div class="customer-messaging-container" id="messaging-container">
+  <!-- Left Panel: Customer List -->
+  <div class="customer-list-panel">
+    <div class="panel-header">
+      <h3>Conversations</h3>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          id="customer-search-input"
+          placeholder="Search customers..."
+        />
+      </div>
+    </div>
+    <div class="customer-list" id="customer-list">
+      {% if customers %} {% for client, last_message, unread_count in customers
+      %}
+      <div
+        class="customer-item"
+        data-client-id="{{ client.id }}"
+        data-client-name="{{ client.full_name }}"
+        data-client-email="{{ client.email }}"
+        data-client-phone="{{ client.phone_number }}"
+      >
+        <div class="customer-avatar">{{ client.full_name[0] | upper }}</div>
+        <div class="customer-info">
+          <span class="customer-name">{{ client.full_name }}</span>
+          <span class="customer-last-message">
+            {% if last_message %} {{ last_message.content }} {% else %} No
+            messages yet. {% endif %}
+          </span>
+        </div>
+        <div class="customer-meta">
+          <span class="message-timestamp">
+            {% if last_message %} {{ last_message.timestamp.strftime('%I:%M %p')
+            if (last_message.timestamp.date() == today) else
+            last_message.timestamp.strftime('%b %d') }} {% endif %}
+          </span>
+          {% if unread_count and unread_count > 0 %}
+          <span class="unread-badge">{{ unread_count }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %} {% else %}
+      <div class="no-customers-placeholder">
+        <i class="fas fa-user-friends"></i>
+        <p>
+          No customers yet. When a client books with you, they will appear here.
+        </p>
+      </div>
+      {% endif %}
+    </div>
   </div>
-</section>
+
+  <!-- Middle Panel: Chat Window -->
+  <div class="chat-panel">
+    <div id="chat-placeholder" class="chat-placeholder active">
+      <i class="fas fa-comments placeholder-icon"></i>
+      <h3>Customer Messaging</h3>
+      <p>Select a customer from the list to start a conversation.</p>
+    </div>
+
+    <div id="chat-window" class="chat-window">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <h4 id="chat-with-name"></h4>
+          <p id="chat-status">Online</p>
+          <!-- Placeholder -->
+        </div>
+        <div class="chat-header-actions">
+          <button
+            class="btn-icon"
+            id="customer-info-toggle"
+            aria-label="View customer details"
+          >
+            <i class="fas fa-info-circle"></i>
+          </button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be loaded here by JS -->
+      </div>
+      <div class="chat-input-area">
+        <form id="message-form" novalidate>
+          <input
+            type="text"
+            id="message-input"
+            placeholder="Type your message..."
+            autocomplete="off"
+            required
+          />
+          <button
+            type="submit"
+            class="btn btn-primary btn-send"
+            aria-label="Send Message"
+          >
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Customer Details -->
+  <div class="customer-details-panel" id="customer-details-panel">
+    <div class="panel-header">
+      <h3>Customer Details</h3>
+      <button
+        class="btn-icon"
+        id="customer-details-close"
+        aria-label="Close details"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="details-content" id="details-content-area">
+      <div class="details-placeholder">
+        <p>Select a customer to see their details.</p>
+      </div>
+      <!-- Details will be loaded here by JS -->
+    </div>
+  </div>
+</div>
 {% endblock %} {% block page_scripts %} {{ super() }}
-<!-- <script src="{{ url_for('static', filename='js/business/customers.js') }}"></script> -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-  console.log("Customers page specific JS loaded.");
+  // Pass today's date to JS for timestamp formatting
+  const today_date = new Date().toISOString().split("T")[0];
 </script>
+<script src="{{ url_for('static', filename='js/business/customers.js') }}"></script>
 {% endblock %}

@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, time as dt_time, date as dt_date
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint, Index
 
 db = SQLAlchemy()
 
@@ -28,7 +28,7 @@ class BusinessOwner(db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationships are implicitly defined by backrefs from Service, Booking, BusinessAvailability
+    # Relationships are implicitly defined by backrefs from Service, Booking, BusinessAvailability, Message
 
     def __repr__(self):
         return f'<BusinessOwner {self.username} - {self.business_name}>'
@@ -72,7 +72,7 @@ class Client(db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship 'all_bookings' is defined in Booking model via backref
+    # Relationships defined in Booking and Message models via backref
 
     def __repr__(self):
         return f'<Client {self.full_name} ({self.email})>'
@@ -95,6 +95,39 @@ class Client(db.Model):
             'lga_area': self.lga_area,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         }
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    business_owner_id = db.Column(db.Integer, db.ForeignKey('business_owners.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=False)
+    
+    # Who sent this specific message: 'owner' or 'client'
+    sender_role = db.Column(db.String(20), nullable=False) 
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+
+    business_owner = db.relationship('BusinessOwner', backref=db.backref('messages', lazy='dynamic', cascade="all, delete-orphan"))
+    client = db.relationship('Client', backref=db.backref('messages', lazy='dynamic', cascade="all, delete-orphan"))
+
+    # An index on the conversation pair for faster lookups
+    __table_args__ = (Index('idx_conversation', 'business_owner_id', 'client_id'),)
+
+    def __repr__(self):
+        return f'<Message {self.id} from {self.sender_role}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'business_owner_id': self.business_owner_id,
+            'client_id': self.client_id,
+            'sender_role': self.sender_role,
+            'content': self.content,
+            'timestamp': self.timestamp.isoformat(),
+            'is_read': self.is_read
+        }
+
 
 class Waitlist(db.Model):
     __tablename__ = 'waitlist_signups'
@@ -220,7 +253,7 @@ class Booking(db.Model):
             start_time_str = self.start_datetime.strftime("%Y-%m-%d %H:%M")
         return f'<Booking ID {self.id} for {self.client_display_name} at {start_time_str}>'
 
-    def to_dict(self, include_service=False, include_client_details=False):
+    def to_dict(self, include_service=False, include_client_details=False, include_business_owner=False):
         data = {
             'id': self.id,
             'business_owner_id': self.business_owner_id,
@@ -239,14 +272,15 @@ class Booking(db.Model):
             'client_display_name': self.client_display_name
         }
         if include_service and self.service:
-            data['service'] = self.service.to_dict() # Uses the general Service.to_dict()
+            data['service'] = self.service.to_dict()
         if include_client_details and self.client:
-            data['client_details'] = { # Uses Client.to_dict() or direct attribute access
+            data['client_details'] = {
                 'id': self.client.id,
                 'full_name': self.client.full_name,
                 'email': self.client.email
-                # Consider calling self.client.to_dict() if you need more client fields
             }
+        if include_business_owner and self.business_owner:
+            data['business_owner'] = self.business_owner.to_dict()
         return data
 
 class BusinessAvailability(db.Model):

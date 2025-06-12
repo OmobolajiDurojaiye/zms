@@ -1,0 +1,152 @@
+{% extends "users/users_base.html" %} {% block title %}My Bookings - ZITOPY{%
+endblock %} {% block head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/users/my_bookings.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="bookings-layout-container">
+  <!-- ================================================================= -->
+  <!-- COLUMN 1: BOOKINGS LIST PANEL                                     -->
+  <!-- ================================================================= -->
+  <div class="bookings-list-panel" id="bookingsListPanel">
+    <div class="panel-header">
+      <h1>My Bookings</h1>
+      <p>Select a booking to view details and chat.</p>
+    </div>
+
+    <div class="bookings-tabs">
+      <button class="tab-link active" data-tab="upcoming-bookings">
+        Upcoming
+      </button>
+      <button class="tab-link" data-tab="past-bookings">Past</button>
+      <button class="tab-link" data-tab="cancelled-bookings">Cancelled</button>
+    </div>
+
+    <div class="bookings-list-content">
+      <!-- Upcoming Bookings Tab -->
+      <div id="upcoming-bookings" class="tab-content active">
+        {% if upcoming_bookings %}
+        <div class="booking-items-list">
+          {% for booking in upcoming_bookings %} {% include
+          'users/partials/_booking_list_item.html' %} {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-bookings-placeholder list-placeholder">
+          <i class="fas fa-calendar-plus"></i>
+          <p>You have no upcoming bookings.</p>
+          <a
+            href="{{ url_for('users.dashboard') }}"
+            class="btn btn-primary btn-sm"
+            >Find a Service</a
+          >
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Past Bookings Tab -->
+      <div id="past-bookings" class="tab-content">
+        {% if past_bookings %}
+        <div class="booking-items-list">
+          {% for booking in past_bookings %} {% include
+          'users/partials/_booking_list_item.html' %} {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-bookings-placeholder list-placeholder">
+          <i class="fas fa-history"></i>
+          <p>Your past bookings will appear here.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Cancelled Bookings Tab -->
+      <div id="cancelled-bookings" class="tab-content">
+        {% if cancelled_bookings %}
+        <div class="booking-items-list">
+          {% for booking in cancelled_bookings %} {% include
+          'users/partials/_booking_list_item.html' %} {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-bookings-placeholder list-placeholder">
+          <i class="fas fa-calendar-times"></i>
+          <p>Your cancelled bookings will appear here.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- COLUMN 2: BOOKING DETAILS PANEL                                   -->
+  <!-- ================================================================= -->
+  <div class="booking-details-panel" id="bookingDetailsPanel">
+    <div class="panel-placeholder" id="detailsPlaceholder">
+      <div class="placeholder-content">
+        <i class="fas fa-hand-pointer"></i>
+        <h2>Select a Booking</h2>
+        <p>
+          Choose a booking from the list on the left to see its full details and
+          manage your appointment.
+        </p>
+      </div>
+    </div>
+    <div class="panel-content-wrapper" id="detailsContentWrapper">
+      <!-- JS will inject content here -->
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- COLUMN 3: CHAT PANEL                                              -->
+  <!-- ================================================================= -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="panel-placeholder" id="chatPlaceholder">
+      <div class="placeholder-content">
+        <i class="fas fa-comments"></i>
+        <h2>Direct Messages</h2>
+        <p>
+          Your conversation with the business owner will appear here once you
+          select a booking.
+        </p>
+      </div>
+    </div>
+    <div class="chat-content-wrapper" id="chatContentWrapper">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <h4 id="chatWithBusinessName"></h4>
+          <p>Direct Message</p>
+        </div>
+        <button class="btn-back-to-list" id="backToListBtn">
+          <i class="fas fa-arrow-left"></i> Back to list
+        </button>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <!-- JS will inject messages here -->
+      </div>
+      <div class="chat-input-area">
+        <form id="messageForm" novalidate>
+          <input type="hidden" id="chatBusinessOwnerId" />
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type your message..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="btn-send" aria-label="Send Message">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %} {{ super() }}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  // Pass user ID to JS for Socket.IO connection
+  const current_user_id = {{ current_user.id }};
+</script>
+<script src="{{ url_for('static', filename='js/users/my_bookings.js') }}"></script>
+{% endblock %}

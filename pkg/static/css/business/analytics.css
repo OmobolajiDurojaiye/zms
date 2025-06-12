@@ -1,0 +1,155 @@
+/* static/css/business/analytics.css */
+/* This file should be linked in analytics.html inside the extra_style block */
+
+.date-range-picker {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 1.5rem; /* 24px */
+  margin-bottom: 2rem; /* 32px */
+}
+
+/* Second grid layout */
+.analytics-grid:last-of-type {
+  grid-template-columns: 1fr 1fr;
+}
+
+.analytics-card {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem; /* 24px */
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-card.large {
+  grid-column: 1 / -1; /* Make large card span full width if needed */
+}
+/* In the context of the first grid, large card is on the left */
+.analytics-grid:first-of-type .analytics-card.large {
+  grid-column: auto; /* Reset */
+}
+
+.card-header {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.card-header small {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 300px; /* Consistent height for charts */
+  flex-grow: 1; /* Allows chart to fill card space */
+}
+
+.customer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-grow: 1;
+}
+
+.customer-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem;
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.customer-list-item:hover {
+  background-color: var(--primary-blue-light);
+}
+
+.customer-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.customer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.customer-avatar.recent {
+  background: linear-gradient(135deg, var(--accent-teal), var(--accent-green));
+}
+
+.customer-details h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.customer-details span {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.customer-stat {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  text-align: right;
+}
+
+.list-placeholder,
+.chart-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-secondary);
+  flex-grow: 1;
+  height: 100%;
+  min-height: 200px;
+  padding: 1rem;
+}
+
+.list-placeholder i,
+.chart-no-data i {
+  font-size: 2.5rem;
+  color: var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.list-placeholder p,
+.chart-no-data p {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+@media (max-width: 1200px) {
+  .analytics-grid {
+    grid-template-columns: 1fr; /* Stack columns on smaller screens */
+  }
+}
