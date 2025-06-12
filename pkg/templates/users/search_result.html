@@ -1,0 +1,177 @@
+{% extends "users/users_base.html" %}
+
+{% block title %}Search Results - ZITOPY{% endblock %}
+
+{% block content %}
+<div class="search-results-page">
+  <!-- Filter Sidebar -->
+  <aside class="filter-sidebar">
+    <h3>Filters</h3>
+    <form id="searchForm" action="{{ url_for('users.search_results') }}" method="GET">
+        <!-- ##### FIX APPLIED HERE: Added CSRF token for JS to use in AJAX requests ##### -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Hidden inputs to preserve search term and sorting -->
+        <input type="hidden" name="q" value="{{ search_params.q or '' }}">
+        <input type="hidden" name="sortBy" id="sortByInput" value="{{ search_params.sortBy or 'relevance' }}">
+        
+        <div class="filter-group">
+            <label for="locationFilter">Location</label>
+            <select id="locationFilter" name="location" class="filter-select-sidebar">
+                <option value="all">All Locations</option>
+                {% for state_name in location_filter_options %}
+                <option value="{{ state_name }}" {% if search_params.location == state_name %}selected{% endif %}>
+                    {{ state_name }}{% if state_name == "FCT" %} (Abuja){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="categoryFilter">Category</label>
+            <select id="categoryFilter" name="category" class="filter-select-sidebar">
+                <option value="">All Categories</option>
+                 {% for category_name in quick_categories %}
+                 <option value="{{ category_name }}" {% if search_params.category == category_name %}selected{% endif %}>
+                    {{ category_name }}
+                 </option>
+                 {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="dateFilter">Date</label>
+            <input type="date" id="dateFilter" name="date" class="filter-input-sidebar" value="{{ search_params.date or '' }}">
+        </div>
+        <!-- Time filter is better handled in the modal, so we omit it here for a cleaner UX -->
+    </form>
+  </aside>
+
+  <!-- Main Results Content -->
+  <div class="results-main-content">
+    <section class="search-bar-section">
+      <div class="search-bar-header">
+          <h2 class="section-title">Search Results</h2>
+          <p class="section-subtitle">
+            Found {{ pagination.total or 0 }} service(s) for '{{ search_params.q or 'everything' }}'.
+          </p>
+      </div>
+      <div class="header-actions">
+          <select id="sortBy" class="sort-select">
+              <option value="relevance" {% if search_params.sortBy == 'relevance' %}selected{% endif %}>Sort by: Relevance</option>
+              <option value="rating" {% if search_params.sortBy == 'rating' %}selected{% endif %}>Sort by: Highest Rated</option>
+              <option value="price-low" {% if search_params.sortBy == 'price-low' %}selected{% endif %}>Sort by: Price (Low to High)</option>
+              <option value="price-high" {% if search_params.sortBy == 'price-high' %}selected{% endif %}>Sort by: Price (High to Low)</option>
+          </select>
+      </div>
+    </section>
+
+    <section class="services-section-results">
+        {% if results %}
+        <div class="services-grid" id="servicesGrid">
+            {% for service in results %}
+            <div class="service-card" data-service-id="{{ service.id }}" role="button" tabindex="0">
+                <div class="card-image-container">
+                    <img src="{{ service.image_url or url_for('static', filename='images/placeholder.webp') }}" alt="{{ service.name }}" class="card-image">
+                    <div class="card-image-overlay">
+                        <span class="card-price">${{ "%.2f"|format(service.price|float) }}</span>
+                        <button class="favorite-btn"><i class="far fa-heart"></i></button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <span class="card-category">
+                            {% if service.business.type is sequence and service.business.type is not string %}
+                                {{ service.business.type | join(', ') }}
+                            {% else %}
+                                {{ service.business.type or 'Service' }}
+                            {% endif %}
+                        </span>
+                        <div class="card-rating"><i class="fas fa-star"></i> <span>{{ service.avg_rating }} ({{ service.rating_count }})</span></div>
+                    </div>
+                    <h3 class="card-title">{{ service.name }}</h3>
+                    <div class="card-business-info"><i class="fas fa-store-alt"></i> <span>{{ service.business.name }}</span></div>
+                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> <span>{{ service.business.lga_province or '' }}, {{ service.business.state }}</span></div>
+                </div>
+                <div class="card-footer">
+                    <span class="card-duration"><i class="far fa-clock"></i> {{ service.duration_minutes }} min</span>
+                    <span class="card-action-btn-text">View & Book <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" id="noResults">
+            <div class="empty-icon"><i class="fas fa-search-dollar"></i></div>
+            <h3 class="empty-title">No services found</h3>
+            <p class="empty-text">Try adjusting your search or filter criteria. The perfect service is waiting for you!</p>
+            <a href="{{ url_for('users.dashboard') }}" class="empty-action"><i class="fas fa-home"></i> Back to Home</a>
+        </div>
+        {% endif %}
+
+        {% if pagination and pagination.pages > 1 %}
+        <div class="pagination-controls" id="paginationControls">
+            <a href="{{ url_for('users.search_results', page=pagination.prev_num, **search_params) if pagination.has_prev else '#' }}" class="pagination-btn" {{ 'disabled' if not pagination.has_prev }}>« Prev</a>
+            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if p %}
+                    <a href="{{ url_for('users.search_results', page=p, **search_params) }}" class="pagination-btn {{ 'active' if p == pagination.page else '' }}">{{ p }}</a>
+                {% else %}
+                    <span class="pagination-ellipsis">...</span>
+                {% endif %}
+            {% endfor %}
+            <a href="{{ url_for('users.search_results', page=pagination.next_num, **search_params) if pagination.has_next else '#' }}" class="pagination-btn" {{ 'disabled' if not pagination.has_next }}>Next »</a>
+        </div>
+        {% endif %}
+    </section>
+  </div>
+</div>
+
+<!-- Service Booking Modal -->
+<div id="bookingModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <button id="closeModal" class="modal-close-btn">×</button>
+    <div id="modalLoader" class="modal-loader">
+        <div class="spinner"></div>
+    </div>
+    <div id="modalBody" class="modal-body" style="display: none;">
+      <!-- Content will be populated by JS -->
+      <div class="modal-left">
+          <h2 id="modalServiceName" class="modal-title"></h2>
+          <p id="modalServiceDescription"></p>
+          <div class="modal-details-grid">
+              <div><i class="fas fa-tag"></i> <strong id="modalServicePrice"></strong></div>
+              <div><i class="far fa-clock"></i> <strong id="modalServiceDuration"></strong></div>
+          </div>
+          <hr>
+          <h4>Provided by</h4>
+          <p id="modalBusinessName" class="modal-business-name"></p>
+          <p id="modalBusinessAddress" class="modal-business-address"></p>
+      </div>
+      <div class="modal-right">
+          <h3>Book Your Slot</h3>
+          <div class="booking-form-group">
+              <label for="bookingDate">Select a Date</label>
+              <input type="date" id="bookingDate" name="bookingDate" class="modal-input">
+          </div>
+          <div id="availability-checker">
+             <div id="availabilityLoader" class="availability-loader" style="display: none;">
+                <div class="loading-dots"><span></span><span></span><span></span></div>
+                <span>Checking availability...</span>
+             </div>
+             <div id="timeSlotsContainer" class="time-slots-container">
+                <!-- Time slots will be injected here -->
+             </div>
+             <p id="timeSlotsMessage" class="time-slots-message">Please select a date to see available times.</p>
+          </div>
+          <button id="bookNowBtn" class="book-now-btn-modal" disabled>
+             Select a time slot to book
+          </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/users/search_result.js') }}"></script>
+{% endblock %}

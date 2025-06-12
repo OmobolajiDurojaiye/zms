@@ -195,7 +195,7 @@ def client_login_post():
             flash('Login successful!', 'success')
             if next_url:
                 return redirect(next_url)
-            return redirect(url_for('main.zms_index')) # Placeholder redirect
+            return redirect(url_for('users.dashboard'))
         else:
             flash('Invalid email or password.', 'error')
             return redirect(url_for('main.auth_page_get', tab='clientTab', form='login', next=next_url or ''))

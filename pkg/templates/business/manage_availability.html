@@ -9,11 +9,73 @@
 {% block page_content %}
 <section id="availability-management" class="content-section active">
   <div class="section-header" style="border-bottom: 1px solid var(--border-color-light); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-    <h2>Set Your Working Hours & Overrides</h2>
-    <p>Define your regular weekly schedule and add specific date overrides for holidays or special hours.</p>
+    <!-- you can set schedules in advance -->
+    <h2>Set Your Working Hours</h2>
+    <p>Define your regular daily schedule.</p>
   </div>
 
   <div class="availability-sections">
+    <!-- Date Overrides Section -->
+    <div id="dateOverridesSection" class="availability-section">
+      <h3>Daily Schedule</h3>
+      <form id="dateOverrideForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="overrideDate">Select Date <span class="required-asterisk">*</span></label>
+            <input type="date" id="overrideDate" name="override_date" required>
+          </div>
+          <div class="form-group">
+            <label for="overrideType">Availability Type <span class="required-asterisk">*</span></label>
+            <select id="overrideType" name="override_type">
+              <option value="available">Set Custom Hours</option>
+              <option value="blocked_override">Mark as Unavailable</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Wrapper for custom hours, to be toggled by JS -->
+        <div id="overrideAvailableSlotsWrapper">
+          <div id="overrideSlotsContainer" class="time-slots-container" style="margin-left:0; margin-top:1rem;">
+            <!-- JS will populate this if 'available' is selected -->
+          </div>
+          <button type="button" id="addOverrideSlotBtn" class="btn btn-sm btn-outline-secondary add-slot-btn">
+            <i class="fas fa-plus-circle"></i> Add Time Slot
+          </button>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Add/Update Override</button>
+        </div>
+        <div id="overrideStatus" class="form-message" style="display: none;"></div>
+      </form>
+
+      <div class="availability-summary" style="margin-top: 2rem;">
+        <h4>Existing Date Overrides:</h4>
+        <ul id="existingOverridesList">
+          {% if date_overrides %}
+            {% for override in date_overrides %}
+            <li data-id="{{ override.id }}">
+              <span>
+                <strong>{{ override.specific_date.strftime('%Y-%m-%d (%a)') }}:</strong>
+                {% if override.slot_type == 'blocked_override' %}
+                  Unavailable all day
+                {% else %}
+                  {{ override.start_time.strftime('%H:%M') }} - {{ override.end_time.strftime('%H:%M') }} ({{ override.slot_type | title }})
+                {% endif %}
+              </span>
+              <button type="button" class="btn btn-sm btn-danger delete-availability-btn" data-id="{{ override.id }}" title="Delete Override">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </li>
+            {% endfor %}
+          {% else %}
+            <p id="noOverridesMessage">No specific date overrides found.</p>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
     <!-- Weekly Schedule Section -->
     <div id="weeklyScheduleSection" class="availability-section">
       <h3>Recurring Weekly Schedule</h3>
@@ -88,58 +150,6 @@
       </form>
     </div>
 
-    <!-- Date Overrides Section -->
-    <div id="dateOverridesSection" class="availability-section">
-      <h3>Date Overrides & Special Hours</h3>
-      <form id="dateOverrideForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="overrideDate">Select Date <span class="required-asterisk">*</span></label>
-            <input type="date" id="overrideDate" name="override_date" required>
-          </div>
-          <div class="form-group">
-            <label for="overrideType">Availability Type <span class="required-asterisk">*</span></label>
-            <select id="overrideType" name="override_type">
-              <option value="available">Set Custom Hours</option>
-              <option value="blocked_override">Mark as Unavailable</option>
-            </select>
-          </div>
-        </div>
-        <div id="overrideSlotsContainer" class="time-slots-container" style="margin-left:0; margin-top:1rem;">
-          <!-- JS will populate this if 'available' is selected -->
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Add/Update Override</button>
-        </div>
-        <div id="overrideStatus" class="form-message" style="display: none;"></div>
-      </form>
-
-      <div class="availability-summary" style="margin-top: 2rem;">
-        <h4>Existing Date Overrides:</h4>
-        <ul id="existingOverridesList">
-          {% if date_overrides %}
-            {% for override in date_overrides %}
-            <li data-id="{{ override.id }}">
-              <span>
-                <strong>{{ override.specific_date.strftime('%Y-%m-%d (%a)') }}:</strong>
-                {% if override.slot_type == 'blocked_override' %}
-                  Unavailable all day
-                {% else %}
-                  {{ override.start_time.strftime('%H:%M') }} - {{ override.end_time.strftime('%H:%M') }} ({{ override.slot_type | title }})
-                {% endif %}
-              </span>
-              <button type="button" class="btn btn-sm btn-danger delete-availability-btn" data-id="{{ override.id }}" title="Delete Override">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </li>
-            {% endfor %}
-          {% else %}
-            <p id="noOverridesMessage">No specific date overrides found.</p>
-          {% endif %}
-        </ul>
-      </div>
-    </div>
   </div>
 </section>
 {% endblock %}

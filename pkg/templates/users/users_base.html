@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}ZITOPY{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/users/dashboard.css') }}"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">
+          <div class="brand-logo">
+            <div class="logo-icon">
+              <i class="fas fa-lightning-bolt"></i>
+            </div>
+            <div class="brand-text">
+              <h2>ZITOPY</h2>
+              <span class="brand-tagline">Management Solution</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-menu">
+          <a
+            href="{{ url_for('users.dashboard') }}"
+            class="nav-link {% if request.endpoint == 'users.dashboard' %}active{% endif %}"
+          >
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </a>
+          <a href="#" class="nav-link">
+            <i class="fas fa-calendar-check"></i>
+            <span>My Bookings</span>
+          </a>
+          <a href="#" class="nav-link">
+            <i class="fas fa-heart"></i>
+            <span>Favorites</span>
+          </a>
+          <a href="#" class="nav-link">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+          </a>
+        </div>
+
+        <div class="nav-actions">
+          <button class="notification-btn">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge">3</span>
+          </button>
+          <div class="user-menu">
+            <button class="user-btn">
+              <div class="user-avatar">
+                {{ current_user.full_name[0] if current_user and
+                current_user.full_name else 'U' }}
+              </div>
+              <span class="user-name"
+                >{{ current_user.full_name if current_user else 'User' }}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="user-dropdown">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile Settings
+              </a>
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Preferences
+              </a>
+              <hr class="dropdown-divider" />
+              <a
+                href="{{ url_for('main.logout') }}"
+                class="dropdown-item logout"
+              >
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <button class="mobile-menu-btn">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Block -->
+    <main class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flashed-messages-container">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
+
+    <!-- Toast Container for JS notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Base Scripts -->
+    {% block scripts %}
+    <script>
+      // General UI toggles for the navbar
+      document.addEventListener("DOMContentLoaded", () => {
+        const userMenuBtn = document.querySelector(".user-menu .user-btn");
+        const userDropdown = document.querySelector(
+          ".user-menu .user-dropdown"
+        );
+
+        if (userMenuBtn && userDropdown) {
+          userMenuBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle("show");
+          });
+        }
+
+        window.addEventListener("click", (e) => {
+          if (userDropdown && userDropdown.classList.contains("show")) {
+            userDropdown.classList.remove("show");
+          }
+        });
+      });
+    </script>
+    {% endblock %}
+  </body>
+</html>

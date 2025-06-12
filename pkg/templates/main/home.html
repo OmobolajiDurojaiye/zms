@@ -40,7 +40,7 @@
         <div class="nav-menu" id="nav-menu">
           <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
-          <a href="#pricing" class="nav-link">Pricing</a>
+          {#<a href="#pricing" class="nav-link">Pricing</a>#}
           <a href="#contact" class="nav-link">Contact</a>
           <a href="{{ url_for('main.auth_page_get') }}" class="btn-primary"
             >Get Started</a
@@ -293,6 +293,7 @@
       </div>
     </section>
 
+    {#
     <section id="pricing" class="pricing">
       <div class="container">
         <div class="section-header">
@@ -331,6 +332,7 @@
         </div>
       </div>
     </section>
+    #}
 
     <!-- CTA Section - UPDATED FOR NO TRIAL -->
     <section class="cta">

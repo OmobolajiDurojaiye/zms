@@ -58,6 +58,23 @@
 
           <!-- Business Owner Tab Content -->
           <div id="businessOwnerTab" class="tab-content active">
+            <!-- ========== START: NEW WARNING ========== -->
+            <div class="auth-role-warning">
+              <i class="fas fa-store warning-icon"></i>
+              <p>
+                <strong>Are you a Business Owner?</strong> This section is for
+                managing your business. If you're a client, please
+                <a
+                  href="#"
+                  class="warning-switch-link"
+                  data-switch-to-tab="clientTab"
+                  >switch to the Client section</a
+                >.
+              </p>
+              <i class="fas fa-arrow-right warning-arrow"></i>
+            </div>
+            <!-- ========== END: NEW WARNING ========== -->
+
             <div class="form-toggle">
               <button class="form-toggle-button active" data-form="boLogin">
                 Login
@@ -314,6 +331,22 @@
 
           <!-- Client Tab Content -->
           <div id="clientTab" class="tab-content">
+            <!-- ========== START: NEW WARNING ========== -->
+            <div class="auth-role-warning">
+              <i class="fas fa-user-check warning-icon"></i>
+              <p>
+                <strong>Are you a Client?</strong> This section is for booking
+                services. If you're a business owner, please
+                <a
+                  href="#"
+                  class="warning-switch-link"
+                  data-switch-to-tab="businessOwnerTab"
+                  >switch to the Business Owner section</a
+                >.
+              </p>
+              <i class="fas fa-arrow-right warning-arrow"></i>
+            </div>
+            <!-- ========== END: NEW WARNING ========== -->
             <div class="form-toggle">
               <button class="form-toggle-button active" data-form="clientLogin">
                 Login

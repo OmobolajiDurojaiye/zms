@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash
-from . import main_bp # Corrected: main_bp is defined in pkg/main/__init__.py
+from . import main_bp
 from pkg.models import db, Waitlist 
 
 @main_bp.route('/')

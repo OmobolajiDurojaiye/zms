@@ -8,6 +8,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const overrideSlotsContainer = document.getElementById(
     "overrideSlotsContainer"
   );
+  const overrideAvailableSlotsWrapper = document.getElementById(
+    "overrideAvailableSlotsWrapper"
+  );
+  const addOverrideSlotBtn = document.getElementById("addOverrideSlotBtn");
   const existingOverridesList = document.getElementById(
     "existingOverridesList"
   );
@@ -38,6 +42,8 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".add-slot-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const dayIndex = this.dataset.dayIndex;
+      if (dayIndex === "override") return; // Handled by a separate listener
+
       const slotsContainer = document.getElementById(
         `slots_container_${dayIndex}`
       );
@@ -182,42 +188,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Date Override Logic ---
   function setupOverrideSlots() {
-    overrideSlotsContainer.innerHTML = ""; // Clear previous slots
     if (overrideTypeInput.value === "available") {
-      // Add a default slot for "available"
-      addSlotToContainer(overrideSlotsContainer, "new_override", 0, false); // isWeekly = false
-
-      const addOverrideSlotBtn = document.createElement("button");
-      addOverrideSlotBtn.type = "button";
-      addOverrideSlotBtn.classList.add(
-        "btn",
-        "btn-sm",
-        "btn-outline-secondary",
-        "add-slot-btn"
-      );
-      addOverrideSlotBtn.innerHTML =
-        '<i class="fas fa-plus-circle"></i> Add Time Slot';
-      addOverrideSlotBtn.style.marginLeft = "0"; // No indent for override slots
-      addOverrideSlotBtn.addEventListener("click", () => {
-        const slotCount =
-          overrideSlotsContainer.querySelectorAll(".time-slot").length;
-        addSlotToContainer(
-          overrideSlotsContainer,
-          "new_override",
-          slotCount,
-          false
-        );
-      });
-      overrideSlotsContainer.appendChild(addOverrideSlotBtn);
+      overrideAvailableSlotsWrapper.style.display = "block";
+      // If the container is empty when switching to 'available', add a default slot
+      if (overrideSlotsContainer.children.length === 0) {
+        addSlotToContainer(overrideSlotsContainer, "new_override", 0, false);
+      }
     } else {
-      // "blocked_override"
-      // No time slots needed
+      // 'blocked_override'
+      overrideAvailableSlotsWrapper.style.display = "none";
+      // Clear the slots to ensure they are not submitted with the form
+      overrideSlotsContainer.innerHTML = "";
     }
   }
 
   if (overrideTypeInput) {
     overrideTypeInput.addEventListener("change", setupOverrideSlots);
-    setupOverrideSlots(); // Initial call
+    setupOverrideSlots(); // Initial call to set the correct state on page load
+  }
+
+  if (addOverrideSlotBtn) {
+    addOverrideSlotBtn.addEventListener("click", function () {
+      const slotCount =
+        overrideSlotsContainer.querySelectorAll(".time-slot").length;
+      addSlotToContainer(
+        overrideSlotsContainer,
+        "new_override",
+        slotCount,
+        false
+      );
+    });
   }
 
   if (dateOverrideForm) {

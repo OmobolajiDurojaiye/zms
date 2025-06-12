@@ -1,0 +1,115 @@
+{% extends "users/users_base.html" %}
+
+{% block title %}Dashboard - ZITOPY{% endblock %}
+
+{% block head_extra %}
+<script>
+  // Pass client preferences to JavaScript
+  const ZITOPY_CLIENT_PREFS = {
+    country: "{{ client_location_prefs.country or '' }}",
+    state: "{{ client_location_prefs.state or '' }}",
+    lga_area: "{{ client_location_prefs.lga_area or '' }}",
+  };
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-background">
+    <div class="hero-pattern"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1 class="hero-title">
+        Discover Amazing
+        <span class="highlight">Services</span>
+        Near You
+      </h1>
+      <p class="hero-subtitle">
+        Connect with top-rated local businesses and book services
+        instantly. Your next great experience is just a click away.
+      </p>
+    </div>
+
+    <!-- Enhanced Search Section -->
+    <div class="search-section">
+      <form class="search-form" id="searchForm" action="{{ url_for('users.search_results') }}" method="GET">
+        <div class="search-container">
+          <div class="search-main">
+            <div class="search-input-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input
+                type="text"
+                id="searchInput"
+                name="q"
+                placeholder="What service are you looking for?"
+                class="search-input"
+              />
+            </div>
+            <button type="submit" class="search-btn">
+              <i class="fas fa-search"></i>
+              <span>Search</span>
+            </button>
+          </div>
+
+          <div class="search-filters">
+            <div class="filter-item">
+              <i class="fas fa-map-marker-alt"></i>
+              <select
+                id="locationFilter"
+                name="location"
+                class="filter-select"
+              >
+                <option value="all">All Locations</option>
+                {% if location_filter_options %} {% for state_name in
+                location_filter_options %}
+                <option value="{{ state_name }}" {% if client_location_prefs.state == state_name %}selected{% endif %}>
+                  {{ state_name }}{% if state_name == "FCT" %} (Abuja){% endif %}
+                </option>
+                {% endfor %} {% else %}
+                <option value="New York">New York</option>
+                <option value="London">London</option>
+                {% endif %}
+              </select>
+            </div>
+            <div class="filter-item">
+              <i class="fas fa-calendar"></i>
+              <input type="date" id="dateFilter" name="date" class="filter-input"/>
+            </div>
+            <div class="filter-item">
+              <i class="fas fa-clock"></i>
+              <input type="time" id="timeFilter" name="time" class="filter-input"/>
+            </div>
+          </div>
+        </div>
+        
+        <input type="hidden" name="category" id="categoryInput" value="">
+      </form>
+
+      {#<!-- Quick Categories -->
+      <div class="quick-categories" id="quickCategories">
+        <button class="category-chip active" data-category="">
+          <i class="fas fa-th-large"></i>
+          All Services
+        </button>
+        {% if quick_categories %} 
+        {% for category_name in quick_categories %}
+        <button class="category-chip" data-category="{{ category_name }}">
+          <i class="fas fa-tag"></i>
+          {{ category_name }}
+        </button>
+        {% endfor %} 
+        {% endif %}
+      </div>#}
+    </div>
+  </div>
+</section>
+
+
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/users/dashboard.js') }}"></script>
+{% endblock %}

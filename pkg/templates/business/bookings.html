@@ -27,6 +27,126 @@
     color: #6c757d;
     font-style: italic;
   }
+
+  /* --- NEW STYLES for Today's Appointments List --- */
+  .appointment-list {
+    max-height: 550px; /* Adjust height as needed */
+    overflow-y: auto;
+  }
+
+  .appointment-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .appointment-item:last-child {
+    border-bottom: none;
+  }
+
+  .appointment-item:hover {
+    background-color: #fcfcfc;
+  }
+
+  .appointment-time-status {
+    text-align: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+    width: 90px;
+  }
+
+  .appointment-time {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #333;
+  }
+
+  .appointment-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+    white-space: nowrap;
+  }
+
+  /* Status badge colors */
+  .status-confirmed {
+    background-color: #e0f2fe;
+    color: #0c4a6e;
+  }
+  .status-completed {
+    background-color: #dcfce7;
+    color: #14532d;
+  }
+  .status-pending-confirmation {
+    background-color: #fef9c3;
+    color: #713f12;
+  }
+  .status-no-show {
+    background-color: #fee2e2;
+    color: #7f1d1d;
+  }
+  .status-cancelled-by-owner,
+  .status-cancelled-by-client {
+    background-color: #f3f4f6;
+    color: #4b5563;
+  }
+
+  .appointment-details {
+    flex-grow: 1;
+  }
+
+  .appointment-details h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+
+  .appointment-details p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+  }
+
+  .appointment-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-icon {
+    background: none;
+    border: 1px solid #ddd;
+    color: #555;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+  }
+
+  .btn-icon:hover {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .btn-icon.btn-icon-danger:hover {
+    background-color: #f8d7da;
+    color: #dc3545;
+    border-color: #dc3545;
+  }
 </style>
 {% endblock extra_style %} {% block page_title %}Booking Management{% endblock
 %} {% block header_quick_actions %}
@@ -88,30 +208,44 @@
       <h3 id="appointmentsListTitle" class="card-header-style">
         Today's Appointments
       </h3>
+      <!-- MODIFIED: Today's Appointments List -->
       <div id="appointmentList" class="appointment-list">
         {% if todays_bookings %} {% for booking in todays_bookings %}
         <div class="appointment-item" data-booking-id="{{ booking.id }}">
-          <div class="appointment-time">
-            {{ booking.start_datetime.strftime('%I:%M %p') }}
+          <div class="appointment-time-status">
+            <div class="appointment-time">
+              {{ booking.start_datetime.strftime('%I:%M %p') }}
+            </div>
+            <span
+              class="appointment-status status-{{ booking.status | lower | replace('_', '-') }}"
+            >
+              {{ booking.status | replace('_', ' ') | title }}
+            </span>
           </div>
           <div class="appointment-details">
             <h4>{{ booking.client_display_name }}</h4>
             <p>Service: {{ booking.service.name }}</p>
-            <span
-              class="appointment-status status-{{ booking.status | lower | replace('_', '-') }}"
-              >{{ booking.status | replace('_', ' ') | title }}</span
-            >
           </div>
           <div class="appointment-actions">
+            <!-- Call Button -->
             <button
-              class="btn-icon btn-contact-client"
-              aria-label="Contact Client"
-              title="Contact Client ({{ booking.guest_phone_number or (booking.client.phone_number if booking.client else 'N/A') }})"
+              class="btn-icon btn-call-client"
+              aria-label="Call Client"
+              title="Call Client ({{ booking.guest_phone_number or (booking.client.phone_number if booking.client else 'N/A') }})"
               data-phone="{{ booking.guest_phone_number or (booking.client.phone_number if booking.client else '') }}"
+            >
+              <i class="fas fa-phone-alt"></i>
+            </button>
+            <!-- Message Button -->
+            <button
+              class="btn-icon btn-message-client"
+              aria-label="Message Client"
+              title="Message Client ({{ booking.guest_email or (booking.client.email if booking.client else 'N/A') }})"
               data-email="{{ booking.guest_email or (booking.client.email if booking.client else '') }}"
             >
-              <i class="fas fa-phone"></i>
+              <i class="fas fa-comment-dots"></i>
             </button>
+            <!-- Edit Button -->
             <button
               class="btn-icon btn-edit-booking"
               aria-label="Edit Booking"
@@ -120,6 +254,7 @@
             >
               <i class="fas fa-edit"></i>
             </button>
+            <!-- Cancel Button -->
             <button
               class="btn-icon btn-cancel-booking btn-icon-danger"
               aria-label="Cancel Booking"
@@ -131,9 +266,15 @@
           </div>
         </div>
         {% endfor %} {% else %}
-        <p class="no-appointments">No appointments scheduled for today.</p>
+        <p
+          class="no-appointments"
+          style="padding: 20px; text-align: center; color: #6c757d"
+        >
+          No appointments scheduled for today.
+        </p>
         {% endif %}
       </div>
+      <!-- End of Modified List -->
     </div>
   </div>
 </section>

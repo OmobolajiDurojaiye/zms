@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, time as dt_time, date as dt_date
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import CheckConstraint, UniqueConstraint # Added for BusinessAvailability
+from sqlalchemy import CheckConstraint, UniqueConstraint
 
 db = SQLAlchemy()
 
@@ -13,7 +13,8 @@ class BusinessOwner(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(150), nullable=False)
     business_name = db.Column(db.String(150), nullable=False)
-    business_type = db.Column(db.String(100), nullable=False) # e.g., Nail Tech, Barber
+    # MODIFIED: Changed from String to JSON to support multiple business types
+    business_type = db.Column(db.JSON, nullable=True) # e.g., ["Nail Tech", "Barber"]
     email = db.Column(db.String(120), unique=True, nullable=False)
     phone_number = db.Column(db.String(30), nullable=False) # Consider E.164 format
 
@@ -27,6 +28,8 @@ class BusinessOwner(db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationships are implicitly defined by backrefs from Service, Booking, BusinessAvailability
+
     def __repr__(self):
         return f'<BusinessOwner {self.username} - {self.business_name}>'
 
@@ -36,12 +39,12 @@ class BusinessOwner(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self): # Example, adjust as needed
+    def to_dict(self):
         return {
             'id': self.id,
             'full_name': self.full_name,
             'business_name': self.business_name,
-            'business_type': self.business_type,
+            'business_type': self.business_type, # Will be a list or null
             'email': self.email,
             'phone_number': self.phone_number,
             'country': self.country,
@@ -49,7 +52,7 @@ class BusinessOwner(db.Model):
             'lga_province': self.lga_province,
             'full_address': self.full_address,
             'username': self.username,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         }
 
 class Client(db.Model):
@@ -69,6 +72,8 @@ class Client(db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationship 'all_bookings' is defined in Booking model via backref
+
     def __repr__(self):
         return f'<Client {self.full_name} ({self.email})>'
 
@@ -78,7 +83,7 @@ class Client(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self): # Example, adjust as needed
+    def to_dict(self):
         return {
             'id': self.id,
             'full_name': self.full_name,
@@ -88,7 +93,7 @@ class Client(db.Model):
             'country': self.country,
             'state': self.state,
             'lga_area': self.lga_area,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         }
 
 class Waitlist(db.Model):
@@ -109,10 +114,8 @@ class Waitlist(db.Model):
             'email': self.email,
             'name': self.name,
             'user_type': self.user_type,
-            'signed_up_at': self.signed_up_at.strftime('%Y-%m-%d %H:%M:%S')
+            'signed_up_at': self.signed_up_at.strftime('%Y-%m-%d %H:%M:%S') if self.signed_up_at else None
         }
-
-# --- NEW MODELS FOR BOOKING SYSTEM ---
 
 class Service(db.Model):
     __tablename__ = 'services'
@@ -126,22 +129,53 @@ class Service(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    business_owner = db.relationship('BusinessOwner', backref=db.backref('services', lazy=True))
+    business_owner = db.relationship('BusinessOwner', backref=db.backref('services', lazy='select'))
+    # Relationship 'all_bookings' is defined in Booking model via backref
 
     def __repr__(self):
         return f'<Service {self.name} (Owner ID: {self.business_owner_id})>'
 
-    def to_dict(self):
+    def to_dict(self): # General purpose to_dict
         return {
             'id': self.id,
             'business_owner_id': self.business_owner_id,
             'name': self.name,
             'description': self.description,
             'duration_minutes': self.duration_minutes,
-            'price': str(self.price), # Convert Decimal to string for JSON
+            'price': str(self.price) if self.price is not None else None,
             'is_active': self.is_active,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+        }
+
+    def to_dict_for_client_view(self):
+        business = self.business_owner
+        business_details = {
+            'id': getattr(business, 'id', None),
+            'name': getattr(business, 'business_name', 'N/A'),
+            'type': getattr(business, 'business_type', 'N/A'),
+            'country': getattr(business, 'country', 'N/A'),
+            'state': getattr(business, 'state', 'N/A'),
+            'lga_province': getattr(business, 'lga_province', 'N/A'),
+            'full_address': getattr(business, 'full_address', 'N/A')
+        } if business else { # Fallback if business somehow is None
+            'id': None, 'name': 'N/A', 'type': 'N/A',
+            'country': 'N/A', 'state': 'N/A', 'lga_province': 'N/A',
+            'full_address': 'N/A'
+        }
+        
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'duration_minutes': self.duration_minutes,
+            'price': str(self.price) if self.price is not None else None,
+            'is_active': self.is_active,
+            'business': business_details,
+            # Placeholders - these would typically come from aggregated data or other models
+            'avg_rating': 4.5, # Placeholder
+            'rating_count': 120, # Placeholder
+            'image_url': None, # Placeholder - you might add an image field or derive one
         }
 
 class Booking(db.Model):
@@ -170,7 +204,7 @@ class Booking(db.Model):
 
     business_owner = db.relationship('BusinessOwner', backref=db.backref('all_bookings', lazy='dynamic'))
     client = db.relationship('Client', backref=db.backref('all_bookings', lazy='dynamic'))
-    service = db.relationship('Service', backref=db.backref('all_bookings', lazy=True))
+    service = db.relationship('Service', backref=db.backref('all_bookings', lazy='select')) # Changed to select for easier access in to_dict
 
     @hybrid_property
     def client_display_name(self):
@@ -181,7 +215,10 @@ class Booking(db.Model):
         return "Guest"
 
     def __repr__(self):
-        return f'<Booking ID {self.id} for {self.client_display_name} at {self.start_datetime.strftime("%Y-%m-%d %H:%M")}>'
+        start_time_str = "Invalid time"
+        if isinstance(self.start_datetime, datetime):
+            start_time_str = self.start_datetime.strftime("%Y-%m-%d %H:%M")
+        return f'<Booking ID {self.id} for {self.client_display_name} at {start_time_str}>'
 
     def to_dict(self, include_service=False, include_client_details=False):
         data = {
@@ -189,25 +226,26 @@ class Booking(db.Model):
             'business_owner_id': self.business_owner_id,
             'client_id': self.client_id,
             'service_id': self.service_id,
-            'start_datetime': self.start_datetime.isoformat(),
-            'end_datetime': self.end_datetime.isoformat(),
+            'start_datetime': self.start_datetime.isoformat() if isinstance(self.start_datetime, datetime) else None,
+            'end_datetime': self.end_datetime.isoformat() if isinstance(self.end_datetime, datetime) else None,
             'guest_full_name': self.guest_full_name,
             'guest_email': self.guest_email,
             'guest_phone_number': self.guest_phone_number,
             'status': self.status,
             'notes_owner': self.notes_owner,
             'notes_client': self.notes_client,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else None,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else None,
             'client_display_name': self.client_display_name
         }
         if include_service and self.service:
-            data['service'] = self.service.to_dict()
+            data['service'] = self.service.to_dict() # Uses the general Service.to_dict()
         if include_client_details and self.client:
-            data['client_details'] = {
+            data['client_details'] = { # Uses Client.to_dict() or direct attribute access
                 'id': self.client.id,
                 'full_name': self.client.full_name,
                 'email': self.client.email
+                # Consider calling self.client.to_dict() if you need more client fields
             }
         return data
 
@@ -238,28 +276,34 @@ class BusinessAvailability(db.Model):
             '(day_of_week IS NULL AND specific_date IS NOT NULL)',
             name='chk_availability_type_defined_exclusive'
         ),
-        CheckConstraint('start_time < end_time', name='chk_start_before_end_time'),
-        UniqueConstraint('business_owner_id', 'day_of_week', 'start_time', 'specific_date', name='uq_availability_slot'),
+        CheckConstraint('start_time < end_time', name='chk_start_before_end_time')
     )
 
     def __repr__(self):
+        start_str = self.start_time.strftime("%H:%M") if isinstance(self.start_time, dt_time) else "Invalid Time"
+        end_str = self.end_time.strftime("%H:%M") if isinstance(self.end_time, dt_time) else "Invalid Time"
+
         if self.specific_date:
-            return (f'<Availability Override Owner ID {self.business_owner_id} on {self.specific_date.strftime("%Y-%m-%d")} '
-                    f'{self.start_time.strftime("%H:%M")}-{self.end_time.strftime("%H:%M")} ({self.slot_type})>')
+            date_str = self.specific_date.strftime("%Y-%m-%d") if isinstance(self.specific_date, dt_date) else "Invalid Date"
+            return (f'<Availability Override Owner ID {self.business_owner_id} on {date_str} '
+                    f'{start_str}-{end_str} ({self.slot_type})>')
         else:
             days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-            return (f'<Recurring Availability Owner ID {self.business_owner_id} on {days[self.day_of_week]} '
-                    f'{self.start_time.strftime("%H:%M")}-{self.end_time.strftime("%H:%M")} ({self.slot_type})>')
+            day_str = "Invalid Day"
+            if self.day_of_week is not None and 0 <= self.day_of_week < 7:
+                day_str = days[self.day_of_week]
+            return (f'<Recurring Availability Owner ID {self.business_owner_id} on {day_str} '
+                    f'{start_str}-{end_str} ({self.slot_type})>')
 
     def to_dict(self):
         return {
             'id': self.id,
             'business_owner_id': self.business_owner_id,
             'day_of_week': self.day_of_week,
-            'specific_date': self.specific_date.isoformat() if self.specific_date else None,
-            'start_time': self.start_time.strftime('%H:%M'), # Ensure HH:MM format
-            'end_time': self.end_time.strftime('%H:%M'),   # Ensure HH:MM format
+            'specific_date': self.specific_date.isoformat() if isinstance(self.specific_date, dt_date) else None,
+            'start_time': self.start_time.strftime('%H:%M') if isinstance(self.start_time, dt_time) else None,
+            'end_time': self.end_time.strftime('%H:%M') if isinstance(self.end_time, dt_time) else None,
             'slot_type': self.slot_type,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else None,
+            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else None
         }

@@ -235,13 +235,42 @@ document.addEventListener("DOMContentLoaded", function () {
     console.warn("Calendar element #calendarView not found.");
   }
 
-  // Appointment Actions (Cancel, Edit, Contact) - Kept as is
+  // MODIFIED: Appointment Actions (Call, Message, Cancel, Edit)
+  document.querySelectorAll(".btn-call-client").forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.stopPropagation(); // Prevent triggering other click events on the parent
+      const phone = this.dataset.phone;
+      if (phone) {
+        // A simple alert is used for now. On mobile, `window.location.href = 'tel:' + phone;` could be used.
+        alert(`Client Phone: ${phone}`);
+      } else {
+        alert("Client phone number not available.");
+      }
+    });
+  });
+
+  document.querySelectorAll(".btn-message-client").forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const email = this.dataset.email;
+      if (email) {
+        alert(
+          `Client Email: ${email}\n\n(This will trigger the messaging/email feature in the future)`
+        );
+      } else {
+        alert("Client email not available.");
+      }
+    });
+  });
+
   document.querySelectorAll(".btn-cancel-booking").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", function (e) {
+      e.stopPropagation();
       const bookingId = this.dataset.bookingId;
       const clientName = this.closest(".appointment-item")
         .querySelector("h4")
         .textContent.trim();
+
       if (
         confirm(
           `Are you sure you want to cancel the booking for ${clientName}?`
@@ -256,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
           method: "POST",
           headers: {
             "X-CSRFToken":
-              document.querySelector('input[name="csrf_token"]')?.value || // Check if CSRF token is still needed/available on page
+              document.querySelector('input[name="csrf_token"]')?.value ||
               document
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute("content"),
@@ -266,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function () {
           .then((data) => {
             if (data.success) {
               alert(data.message || "Booking cancelled successfully.");
-              window.location.reload();
+              window.location.reload(); // Reload to see the change
             } else {
               alert(
                 "Failed to cancel booking: " + (data.message || "Unknown error")
@@ -284,21 +313,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.querySelectorAll(".btn-edit-booking").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", function (e) {
+      e.stopPropagation();
       const bookingId = this.dataset.bookingId;
       alert(`Edit booking ID ${bookingId} - Feature to be implemented.`);
       // TODO: Implement edit booking modal and functionality
-    });
-  });
-
-  document.querySelectorAll(".btn-contact-client").forEach((button) => {
-    button.addEventListener("click", function () {
-      const phone = this.dataset.phone;
-      const email = this.dataset.email;
-      let contactInfo = "Client Contact Info:\n";
-      contactInfo += `Phone: ${phone || "N/A"}\n`;
-      contactInfo += `Email: ${email || "N/A"}`;
-      alert(contactInfo);
     });
   });
 

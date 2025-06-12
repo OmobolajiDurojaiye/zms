@@ -1,23 +1,221 @@
-{% extends "business/dashboard.html" %} {% block page_title %}Business
-Settings{% endblock %} {% block header_quick_actions %} {# No specific quick
-action button for settings page in this example #} {% endblock %} {% block
-page_content %}
-<section id="settings" class="content-section active">
-  <div class="placeholder-content">
-    <i class="fas fa-sliders-h placeholder-icon"></i>
-    <h3>Configure Your Business</h3>
-    <p>
-      Update business details, manage staff, set preferences, and more. This
-      content is from settings.html.
-    </p>
-    <button class="btn btn-secondary">
+{% extends "business/dashboard.html" %}
+
+{% block page_title %}Business Settings{% endblock %}
+{% block extra_style %}
+    {# MODIFIED: Added Choices.js stylesheet for the multi-select dropdown #}
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/business/settings.css') }}"
+    />
+{% endblock extra_style %}
+{% block header_quick_actions %}
+{# No specific quick action button for settings page #}
+{% endblock %}
+
+{% block page_content %}
+<div class="settings-container">
+  <!-- Settings Navigation -->
+  <nav class="settings-nav">
+    <a href="#" class="settings-nav-item active" data-target="business-info-section">
+      <i class="fas fa-store"></i> Business Information
+    </a>
+    <a href="#" class="settings-nav-item" data-target="services-section">
+      <i class="fas fa-concierge-bell"></i> Services
+    </a>
+    <a href="#" class="settings-nav-item" data-target="security-section">
       <i class="fas fa-shield-alt"></i> Account Security
-    </button>
+    </a>
+  </nav>
+
+  <!-- Settings Content Area -->
+  <div class="settings-content">
+    <!-- Business Information Section -->
+    <section id="business-info-section" class="settings-section active">
+      <div class="card">
+        <div class="card-header">
+          <h3>Business Profile</h3>
+          <p>Update your public business details and contact information.</p>
+        </div>
+        <div class="card-body">
+          <form action="{{ url_for('business.update_business_info') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+              <label for="business_name">Business Name</label>
+              <input type="text" id="business_name" name="business_name" value="{{ current_business_owner.business_name | e }}" required>
+            </div>
+            
+            <!-- MODIFIED: Replaced the single-select dropdown with a multi-select input -->
+            <div class="form-group">
+              <label for="business_type">Business Type(s)</label>
+              <select id="business_type" name="business_type" multiple>
+                {# Flatten the list of all business types from the categorized dictionary and sort them #}
+                {% set all_business_types = business_categories.values() | sum(start=[]) | sort %}
+
+                {% for type in all_business_types %}
+                  <option 
+                    value="{{ type }}" 
+                    {# Check if the type is in the owner's list of business types #}
+                    {% if current_business_owner.business_type and type in current_business_owner.business_type %}selected{% endif %}>
+                    {{ type }}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="form-text">You can select more than one. Start typing to search.</small>
+            </div>
+            <!-- END OF MODIFICATION -->
+
+            <div class="form-row">
+              <div class="form-group">
+                  <label for="phone_number">Contact Phone</label>
+                  <input type="tel" id="phone_number" name="phone_number" value="{{ current_business_owner.phone_number | e }}" required>
+              </div>
+              <div class="form-group">
+                  <label for="state">State</label>
+                  <input type="text" id="state" name="state" value="{{ current_business_owner.state | e }}" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="full_address">Full Address</label>
+              <textarea id="full_address" name="full_address" rows="3" required>{{ current_business_owner.full_address | e }}</textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services-section" class="settings-section">
+      <div class="card">
+        <div class="card-header">
+          <h3>Manage Services</h3>
+          <p>Add, edit, or remove the services you offer to clients.</p>
+        </div>
+        <div class="card-body">
+          <h4>Your Current Services</h4>
+          {% if services %}
+          <ul class="service-list">
+            {% for service in services %}
+            <li class="service-item">
+              <div class="service-info">
+                <strong class="service-name">{{ service.name }}</strong>
+                <span class="service-meta">{{ service.duration_minutes }} min • ₦{{ "%.2f"|format(service.price) }}</span>
+                <p class="service-desc">{{ service.description | truncate(80) }}</p>
+              </div>
+              <div class="service-actions">
+                <span class="status-badge {{ 'status-active' if service.is_active else 'status-inactive' }}">
+                  {{ 'Active' if service.is_active else 'Inactive' }}
+                </span>
+                <button class="btn-icon edit-service-btn" 
+                        data-id="{{ service.id }}" 
+                        data-name="{{ service.name | e }}"
+                        data-description="{{ service.description | e }}"
+                        data-duration="{{ service.duration_minutes }}"
+                        data-price="{{ "%.2f"|format(service.price) }}"
+                        data-is-active="{{ service.is_active|lower }}">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <form action="{{ url_for('business.delete_service', service_id=service.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this service?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-icon btn-icon-danger"><i class="fas fa-trash-alt"></i></button>
+                </form>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="placeholder-box">
+            <p>You haven't added any services yet. Add your first service below!</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer">
+            <h4>Add a New Service</h4>
+            <form action="{{ url_for('business.add_service') }}" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" hidden>
+                <div class="form-group">
+                    <label for="new_service_name">Service Name</label>
+                    <input type="text" id="new_service_name" name="name" placeholder="e.g., Men's Haircut" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="new_service_duration">Duration (minutes)</label>
+                        <input type="number" id="new_service_duration" name="duration_minutes" placeholder="e.g., 30" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_service_price">Price (₦)</label>
+                        <input type="text" id="new_service_price" name="price" placeholder="e.g., 2500.00" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="new_service_description">Description (Optional)</label>
+                    <textarea id="new_service_description" name="description" rows="3" placeholder="Briefly describe what this service includes."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Add Service</button>
+                </div>
+            </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dummy Sections -->
+    <section id="security-section" class="settings-section">
+        <div class="placeholder-content">
+            <i class="fas fa-shield-alt placeholder-icon"></i>
+            <h3>Account Security</h3>
+            <p>This section is coming soon! You'll be able to change your password and manage account security.</p>
+        </div>
+    </section>
   </div>
-</section>
-{% endblock %} {% block page_scripts %} {{ super() }}
-<!-- <script src="{{ url_for('static', filename='js/business/settings.js') }}"></script> -->
-<script>
-  console.log("Settings page specific JS loaded.");
-</script>
+</div>
+
+<!-- Edit Service Modal -->
+<div id="editServiceModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">×</span>
+    <h2>Edit Service</h2>
+    <form id="editServiceForm" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label for="edit_service_name">Service Name</label>
+        <input type="text" id="edit_service_name" name="name" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="edit_service_duration">Duration (minutes)</label>
+          <input type="number" id="edit_service_duration" name="duration_minutes" required>
+        </div>
+        <div class="form-group">
+          <label for="edit_service_price">Price (₦)</label>
+          <input type="text" id="edit_service_price" name="price" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="edit_service_description">Description</label>
+        <textarea id="edit_service_description" name="description" rows="4"></textarea>
+      </div>
+       <div class="form-group-checkbox">
+          <input type="checkbox" id="edit_is_active" name="is_active" value="true">
+          <label for="edit_is_active">Service is Active</label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+{# MODIFIED: Added Choices.js script #}
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="{{ url_for('static', filename='js/business/settings.js') }}"></script>
 {% endblock %}

@@ -86,6 +86,38 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
+    // ========== START: NEW FUNCTIONALITY FOR WARNING LINKS ==========
+    const warningSwitchLinks = document.querySelectorAll(
+      ".warning-switch-link"
+    );
+    warningSwitchLinks.forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const targetTabId = link.dataset.switchToTab;
+
+        // Reuse existing function to switch the main tab
+        switchTab(targetTabId, mainTabButtons, mainTabContents);
+
+        // Also ensure the default form (login) is activated in the new tab
+        const activeTabContent = document.getElementById(targetTabId);
+        if (activeTabContent) {
+          const formToggleButtons = activeTabContent.querySelectorAll(
+            ".form-toggle-button"
+          );
+          const forms = activeTabContent.querySelectorAll(".auth-form");
+          // Default to the first form (which is 'Login')
+          if (formToggleButtons.length > 0) {
+            switchForm(
+              formToggleButtons[0].dataset.form,
+              formToggleButtons,
+              forms
+            );
+          }
+        }
+      });
+    });
+    // ========== END: NEW FUNCTIONALITY FOR WARNING LINKS ==========
+
     const params = new URLSearchParams(window.location.search);
     const requestedTab = params.get("tab");
     const requestedFormType = params.get("form"); // "login" or "signup"

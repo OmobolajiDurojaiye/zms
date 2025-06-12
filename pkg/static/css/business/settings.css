@@ -1,0 +1,306 @@
+/* === ZITOPY - MODERN SETTINGS PAGE STYLES === */
+/* This file extends dashboard.css with styles specific to the settings page.
+   It prioritizes clarity, consistency, and a clean, light user experience
+   that seamlessly integrates with the main dashboard aesthetic. */
+
+/* Main container for the settings layout (nav + content) */
+.settings-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 2.5rem; /* Generous spacing between navigation and content */
+}
+
+/* Settings Side Navigation */
+.settings-nav {
+  flex: 0 0 240px; /* Fixed width for the navigation panel */
+  position: sticky;
+  /* Sticks below the main header with a comfortable margin */
+  top: calc(var(--header-height) + 2rem);
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.settings-nav-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+  transition: transform 0.2s ease-in-out;
+}
+
+.settings-nav-item:hover {
+  color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+  transform: translateX(5px);
+}
+
+.settings-nav-item:hover i {
+  transform: scale(1.1);
+}
+
+.settings-nav-item.active {
+  color: var(--primary-blue);
+  background-color: var(--primary-blue-light);
+  font-weight: 600;
+  border-left-color: var(--primary-blue);
+}
+
+/* Settings Content Area */
+.settings-content {
+  flex-grow: 1; /* Takes up the remaining space */
+  min-width: 0; /* Prevents content from overflowing the container */
+}
+
+/* Individual sections within the content area */
+.settings-section {
+  display: none;
+  animation: fadeIn 0.4s ease-in-out; /* Uses animation from dashboard.css */
+}
+
+.settings-section.active {
+  display: block;
+}
+
+/* Card: The primary container for settings blocks.
+     We reuse the .card styles from dashboard.css and add structure. */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2.5rem;
+  overflow: hidden; /* Ensures child elements respect the border radius */
+}
+
+.card-header,
+.card-body,
+.card-footer {
+  padding: 1.5rem 2rem;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.card-header h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+}
+
+.card-header p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.card-footer {
+  background-color: var(--bg-main);
+  border-top: 1px solid var(--border-color-light);
+}
+
+.card-footer h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem 0;
+}
+
+/* Form Styles, inheriting from dashboard.css for consistency */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color-light);
+}
+
+/* Checkbox specific styling */
+.form-group-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--bg-main);
+  padding: 0.875rem 1.25rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color-light);
+}
+.form-group-checkbox input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--primary-blue);
+  cursor: pointer;
+}
+.form-group-checkbox label {
+  margin-bottom: 0;
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Service List Styles - Clean & Scannable */
+.service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border-color-light);
+}
+.service-list > li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.service-list > li:first-child {
+  padding-top: 0;
+}
+
+.service-info .service-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.service-info .service-meta {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.service-info .service-desc {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.service-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0; /* Prevents actions from shrinking on small screens */
+}
+
+/* Status Badges reusing dashboard styles */
+.status-badge.status-active {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--accent-green);
+}
+.status-badge.status-inactive {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--text-secondary);
+}
+
+/* Placeholder for empty states (e.g., no services) */
+.placeholder-box {
+  background-color: var(--bg-main);
+  padding: 2.5rem;
+  text-align: center;
+  border-radius: var(--border-radius-lg);
+  border: 2px dashed var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* Placeholder for sections that are 'coming soon' */
+.placeholder-content {
+  /* This uses the beautiful placeholder style from dashboard.css */
+  min-height: 50vh;
+}
+
+/* --- Responsive Design for a Flawless Experience on All Devices --- */
+
+/* For tablets and smaller devices */
+@media (max-width: 991px) {
+  .settings-container {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-nav {
+    position: static; /* Unstick the nav */
+    width: 100%;
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0;
+    overflow-x: auto; /* Allow horizontal scrolling for nav items */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  .settings-nav::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .settings-nav-item {
+    margin-bottom: -2px; /* Pull item down to overlap container's border */
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap; /* Prevent nav item text from wrapping */
+    flex-shrink: 0;
+    transform: none !important; /* Reset hover transform */
+  }
+
+  .settings-nav-item.active {
+    border-color: transparent transparent var(--primary-blue) transparent;
+    background-color: var(--bg-card); /* Lifts it 'above' the content area */
+  }
+}
+
+/* For mobile devices */
+@media (max-width: 767px) {
+  .card-header,
+  .card-body,
+  .card-footer {
+    padding: 1.25rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0; /* Gap is handled by form-group margin */
+  }
+
+  .service-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .service-actions {
+    width: 100%;
+    justify-content: flex-end; /* Push buttons to the right */
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
+}

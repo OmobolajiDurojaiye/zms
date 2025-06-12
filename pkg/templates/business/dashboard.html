@@ -55,7 +55,7 @@
         </a>
         <a
           href="{{ url_for('business.bookings_overview') }}"
-          class="nav-item {% if request.endpoint == 'bookings_overview' %}active{% endif %}"
+          class="nav-item {% if request.endpoint == 'business.bookings_overview' %}active{% endif %}"
           data-section="bookings"
         >
           <i class="fas fa-calendar-alt"></i>
@@ -114,10 +114,13 @@
               >{{ current_business_owner.full_name if current_business_owner
               else 'Business Owner' | e }}</span
             >
-            <span class="user-role"
-              >{{ current_business_owner.business_type if current_business_owner
-              else 'Business Owner' | e }}</span
-            >
+            <!-- FIX #1: Applied the join filter here -->
+            {#<span class="user-role"
+              >{% if current_business_owner and
+              current_business_owner.business_type %} {{
+              current_business_owner.business_type | join(', ') | e }} {% else
+              %} Business Type {% endif %}</span
+            >#}
           </div>
         </div>
         <a href="/logout" class="logout-btn">
@@ -144,10 +147,14 @@
             </button>
             <div class="quick-actions">
               {% block header_quick_actions %}
-              <button class="btn btn-primary">
-                <i class="fas fa-plus"></i>
-                Quick Add
-              </button>
+              <!-- MODIFIED: Changed Quick Add to Settings button -->
+              <a
+                href="{{ url_for('business.settings') }}"
+                class="btn btn-secondary"
+              >
+                <i class="fas fa-cog"></i>
+                Complete Profile
+              </a>
               {% endblock %}
             </div>
           </div>
@@ -166,8 +173,9 @@
             </div>
             <div class="business-details">
               <h2>{{ current_business_owner.business_name | e }}</h2>
+              <!-- FIX #2: Applied the join filter here -->
               <p class="business-type">
-                {{ current_business_owner.business_type | e }}
+                {{ current_business_owner.business_type | join(', ') | e }}
               </p>
               <p class="business-owner">
                 Owned by {{ current_business_owner.full_name | e }}
@@ -333,7 +341,7 @@
 
     <script src="{{ url_for('static', filename='js/business/dashboard.js') }}"></script>
     {% block page_scripts %}
-    <!-- Chart.js CDN and script removed -->
+    <!-- Page specific scripts will be injected here by child templates -->
     {% endblock %}
 
     <style>
