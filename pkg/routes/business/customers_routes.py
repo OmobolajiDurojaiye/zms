@@ -1,7 +1,7 @@
-from flask import render_template, session, jsonify
+from flask import render_template, session, jsonify, current_app
 from . import business_bp
-from pkg.routes.main.auth import business_owner_required
-from pkg.models import db, Client, Booking, Message
+from pkg.routes.main.auth import business_owner_required, send_email # <-- IMPORT send_email
+from pkg.models import db, Client, Booking, Message, BusinessOwner # <-- IMPORT BusinessOwner
 from flask_socketio import join_room
 from sqlalchemy import func, case, and_
 from sqlalchemy.orm import aliased
@@ -201,3 +201,36 @@ def handle_send_message_event(data):
     room = f"chat_owner{owner_id}_client{client_id}"
     # Broadcast to all members of the room (the client and the owner)
     socketio.emit('message_received', new_message.to_dict(), room=room, namespace='/business')
+
+    # --- SEND EMAIL NOTIFICATION (AFTER COMMIT) ---
+    try:
+        # We need the full objects for names and emails
+        owner = BusinessOwner.query.get(owner_id)
+        client = Client.query.get(client_id)
+
+        if not owner or not client:
+             raise ValueError("Could not find owner or client for message notification.")
+
+        if sender_role == 'owner':
+            # Business owner sent the message, so notify the client
+            send_email(
+                to=client.email,
+                subject=f"New Message from {owner.business_name}",
+                template='emails/client_message.html',
+                message_obj=new_message,
+                sender=owner,
+                recipient=client
+            )
+        elif sender_role == 'client':
+            # Client sent the message, so notify the business owner
+            send_email(
+                to=owner.email,
+                subject=f"New Message from {client.full_name}",
+                template='emails/bo_message.html',
+                message_obj=new_message,
+                sender=client,
+                recipient=owner
+            )
+    except Exception as e:
+        # Log the email sending error but do not interrupt the chat functionality
+        current_app.logger.error(f"Failed to send message notification email for message {new_message.id}: {e}")

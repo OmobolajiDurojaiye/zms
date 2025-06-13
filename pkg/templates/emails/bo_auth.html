@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Welcome to ZMS!</title>
+    <!--[if !mso]><!-->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <!--<![endif]-->
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      width: 100% !important;
+      background-color: #f1f5f9;
+      font-family: 'Inter', Arial, sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      width="100%"
+      style="background-color: #f1f5f9"
+    >
+      <tr>
+        <td align="center" style="padding: 20px 0">
+          <!-- Main Content -->
+          <table
+            role="presentation"
+            align="center"
+            border="0"
+            cellpadding="0"
+            cellspacing="0"
+            width="600"
+            style="
+              width: 100%;
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: 12px;
+              border: 1px solid #e2e8f0;
+              box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+                0 2px 4px -2px rgb(0 0 0 / 0.1);
+            "
+          >
+            <!-- Header -->
+            <tr>
+              <td
+                align="center"
+                style="
+                  background-color: #2563eb;
+                  padding: 30px 20px;
+                  border-top-left-radius: 12px;
+                  border-top-right-radius: 12px;
+                  color: #ffffff;
+                "
+              >
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 28px;
+                    font-weight: 700;
+                    font-family: 'Inter', Arial, sans-serif;
+                  "
+                >
+                  Welcome to ZMS!
+                </h1>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding: 40px 30px">
+                <h2
+                  style="
+                    color: #0f172a;
+                    margin-top: 0;
+                    margin-bottom: 20px;
+                    font-size: 22px;
+                    font-weight: 700;
+                    font-family: 'Inter', Arial, sans-serif;
+                  "
+                >
+                  Hello, {{ user.full_name }}!
+                </h2>
+                <p
+                  style="
+                    margin: 0 0 15px 0;
+                    color: #64748b;
+                    font-size: 16px;
+                    line-height: 1.6;
+                  "
+                >
+                  We are thrilled to welcome you and your business,
+                  <strong>{{ user.business_name }}</strong>, to the ZMS
+                  platform. Your account has been created successfully.
+                </p>
+                <p
+                  style="
+                    margin: 0 0 25px 0;
+                    color: #64748b;
+                    font-size: 16px;
+                    line-height: 1.6;
+                  "
+                >
+                  You're all set to start managing your business more
+                  efficiently. You can log in to your dashboard to get started.
+                </p>
+                <!-- CTA Button -->
+                <table
+                  role="presentation"
+                  border="0"
+                  cellpadding="0"
+                  cellspacing="0"
+                  width="100%"
+                >
+                  <tr>
+                    <td align="center" style="padding: 10px 0">
+                      <a
+                        href="{{ url_for('main.auth_page_get', tab='businessOwnerTab', form='login', _external=True) }}"
+                        target="_blank"
+                        style="
+                          background-color: #2563eb;
+                          color: #ffffff;
+                          padding: 14px 28px;
+                          text-decoration: none;
+                          border-radius: 8px;
+                          font-weight: 700;
+                          display: inline-block;
+                          font-family: 'Inter', Arial, sans-serif;
+                          font-size: 16px;
+                          border: 1px solid #1d4ed8;
+                        "
+                        >Login to Your Dashboard</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+                <p
+                  style="
+                    margin: 25px 0 15px 0;
+                    color: #64748b;
+                    font-size: 16px;
+                    line-height: 1.6;
+                  "
+                >
+                  If you have any questions, feel free to reply to this email.
+                  We're here to help!
+                </p>
+                <p
+                  style="
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 16px;
+                    line-height: 1.6;
+                  "
+                >
+                  Best regards,<br />The ZMS Team
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  background-color: #f8fafc;
+                  padding: 20px 30px;
+                  color: #94a3b8;
+                  font-size: 12px;
+                  text-align: center;
+                  border-bottom-left-radius: 12px;
+                  border-bottom-right-radius: 12px;
+                "
+              >
+                <p style="margin: 0">
+                  You received this email because you signed up for a Business
+                  Owner account on ZMS.
+                </p>
+                <p style="margin: 5px 0 0 0">
+                  © 2024 ZMS. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

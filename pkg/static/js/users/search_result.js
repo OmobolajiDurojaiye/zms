@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("modalLoader").style.display = "block";
     document.getElementById("timeSlotsContainer").innerHTML = "";
     document.getElementById("timeSlotsMessage").textContent =
-      "Please select a date to see available times.";
+      "Available slots for the selected date will appear here.";
     document.getElementById("bookingDate").value = "";
     const bookNowBtn = document.getElementById("bookNowBtn");
     bookNowBtn.disabled = true;
@@ -87,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
       openModal();
 
       try {
-        // The new route provides all necessary data including image_url
         const response = await fetch(
           `/users/service/${currentServiceId}/details`
         );
@@ -100,27 +99,44 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalServiceName").textContent = service.name;
         document.getElementById("modalServiceDescription").textContent =
           service.description || "No description provided.";
-        
-        // MODIFIED: Changed currency to Naira
-        document.getElementById("modalServicePrice").textContent = `₦${parseFloat(service.price).toFixed(2)}`;
-        
-        // MODIFIED: Handle optional duration
-        const durationContainer = document.getElementById("modalDurationContainer");
-        if (service.duration_minutes) {
-          document.getElementById("modalServiceDuration").textContent = `${service.duration_minutes} min`;
-          durationContainer.style.display = 'block';
-        } else {
-          durationContainer.style.display = 'none';
-        }
-        
-        document.getElementById("modalBusinessName").textContent = service.business.name;
-        document.getElementById("modalBusinessAddress").textContent = `${service.business.lga_province || service.business.state}`;
 
-        const datePicker = document.getElementById("bookingDate");
-        datePicker.min = new Date().toISOString().split("T")[0];
+        document.getElementById(
+          "modalServicePrice"
+        ).textContent = `₦${parseFloat(service.price).toFixed(2)}`;
+
+        const durationContainer = document.getElementById(
+          "modalDurationContainer"
+        );
+        if (service.duration_minutes) {
+          document.getElementById(
+            "modalServiceDuration"
+          ).textContent = `${service.duration_minutes} min`;
+          durationContainer.style.display = "block";
+        } else {
+          durationContainer.style.display = "none";
+        }
+
+        document.getElementById("modalBusinessName").textContent =
+          service.business.name;
+        document.getElementById("modalBusinessAddress").textContent = `${
+          service.business.lga_province || service.business.state
+        }`;
 
         document.getElementById("modalLoader").style.display = "none";
         document.getElementById("modalBody").style.display = "grid";
+
+        const datePicker = document.getElementById("bookingDate");
+
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        const todayString = `${yyyy}-${mm}-${dd}`;
+
+        datePicker.min = todayString;
+        datePicker.value = todayString;
+
+        datePicker.dispatchEvent(new Event("change"));
       } catch (error) {
         console.error("Error fetching service details:", error);
         closeModal();
@@ -152,17 +168,28 @@ document.addEventListener("DOMContentLoaded", () => {
       availabilityLoader.style.display = "flex";
       bookNowBtn.disabled = true;
       bookNowBtn.textContent = "Checking availability...";
+      selectedTime = null;
 
       try {
         const response = await fetch(
           `/users/service/${currentServiceId}/availability?date=${selectedDate}`
         );
-        const availableTimes = await response.json();
+        const result = await response.json();
 
         availabilityLoader.style.display = "none";
 
-        if (availableTimes.length > 0) {
-          availableTimes.forEach((time) => {
+        // MODIFIED: Display the informative message from the backend.
+        if (result.message) {
+          timeSlotsMessage.textContent = result.message;
+          timeSlotsMessage.style.display = "block";
+        }
+
+        // MODIFIED: Check for slots in the new response structure.
+        if (result.slots && result.slots.length > 0) {
+          // Sync date picker in case the backend found the next available day.
+          datePicker.value = result.date;
+
+          result.slots.forEach((time) => {
             const btn = document.createElement("button");
             btn.className = "time-slot-btn";
             btn.textContent = time;
@@ -178,10 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             timeSlotsContainer.appendChild(btn);
           });
-        } else {
-          timeSlotsMessage.textContent =
-            "No available slots for this date. Please try another day.";
-          timeSlotsMessage.style.display = "block";
         }
       } catch (error) {
         console.error("Error fetching availability:", error);
@@ -189,6 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
         timeSlotsMessage.textContent =
           "Could not fetch availability. Please try again.";
         timeSlotsMessage.style.display = "block";
+      } finally {
+        if (!selectedTime) {
+          bookNowBtn.disabled = true;
+          bookNowBtn.textContent = "Select a time slot to book";
+        }
       }
     });
   }
@@ -228,18 +256,20 @@ document.addEventListener("DOMContentLoaded", () => {
           closeModal();
           showToast("success", "Success!", result.message);
         } else {
+          // Refresh availability in case of a conflict error (status 409)
+          if (response.status === 409) {
+            datePicker.dispatchEvent(new Event("change"));
+          }
           throw new Error(result.message || "An unknown error occurred.");
         }
       } catch (error) {
         showToast("error", "Booking Failed", error.message);
-        datePicker.dispatchEvent(new Event("change"));
-      } finally {
-        if (selectedTime) {
+        // The button state will be reset by the availability check if it was re-triggered
+        if (bookNowBtn.disabled) {
           bookNowBtn.disabled = false;
-          bookNowBtn.textContent = `Book for ${selectedTime}`;
-        } else {
-          bookNowBtn.disabled = true;
-          bookNowBtn.textContent = "Select a time slot to book";
+          bookNowBtn.textContent = selectedTime
+            ? `Book for ${selectedTime}`
+            : "Select a time slot to book";
         }
       }
     });

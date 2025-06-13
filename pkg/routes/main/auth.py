@@ -1,7 +1,34 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session, current_app
 from functools import wraps
+from threading import Thread
+from flask_mail import Message
 from . import main_bp
+from pkg import mail
 from pkg.models import db, BusinessOwner, Client # Assuming 'pkg' is your root package for models
+
+# --- Email Sending Utilities ---
+def send_async_email(app, msg):
+    """Function to send email in a background thread."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Error sending email: {e}") # Log the error
+
+def send_email(to, subject, template, **kwargs):
+    """Prepares and sends an email in a background thread."""
+    app = current_app._get_current_object()
+    msg = Message(
+        subject,
+        sender=current_app.config['MAIL_DEFAULT_SENDER'],
+        recipients=[to]
+    )
+    # The _external=True is crucial for generating full URLs in emails
+    msg.html = render_template(template, **kwargs)
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
+
 
 # --- Login Required Decorator (Generic) ---
 def login_required(f):
@@ -83,6 +110,16 @@ def bo_signup_post():
         try:
             db.session.add(new_bo)
             db.session.commit()
+
+            # --- SEND WELCOME EMAIL ---
+            send_email(
+                to=new_bo.email,
+                subject='Welcome to ZMS, Business Owner!',
+                template='emails/bo_auth.html',
+                user=new_bo
+            )
+            # --- END EMAIL ---
+
             flash('Business Owner account created successfully! Please login.', 'success')
             return redirect(url_for('main.auth_page_get', tab='businessOwnerTab', form='login'))
         except Exception as e:
@@ -164,6 +201,16 @@ def client_signup_post():
         try:
             db.session.add(new_client)
             db.session.commit()
+
+            # --- SEND WELCOME EMAIL ---
+            send_email(
+                to=new_client.email,
+                subject='Welcome to ZMS!',
+                template='emails/client_auth.html',
+                user=new_client
+            )
+            # --- END EMAIL ---
+
             flash('Client account created successfully! Please login.', 'success')
             return redirect(url_for('main.auth_page_get', tab='clientTab', form='login'))
         except Exception as e:

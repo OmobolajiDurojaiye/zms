@@ -179,7 +179,8 @@
       <div class="modal-right">
           <h3>Book Your Slot</h3>
           <div class="booking-form-group">
-              <label for="bookingDate">Select a Date</label>
+              <!-- MODIFIED: Changed label to be more neutral -->
+              <label for="bookingDate">Date</label>
               <input type="date" id="bookingDate" name="bookingDate" class="modal-input">
           </div>
           <div id="availability-checker">
@@ -188,7 +189,8 @@
                 <span>Checking availability...</span>
              </div>
              <div id="timeSlotsContainer" class="time-slots-container"></div>
-             <p id="timeSlotsMessage" class="time-slots-message">Please select a date to see available times.</p>
+             <!-- MODIFIED: Changed initial message to reflect new auto-load behavior -->
+             <p id="timeSlotsMessage" class="time-slots-message">Available slots for the selected date will appear here.</p>
           </div>
           <button id="bookNowBtn" class="book-now-btn-modal" disabled>
              Select a time slot to book
