@@ -114,13 +114,13 @@
               >{{ current_business_owner.full_name if current_business_owner
               else 'Business Owner' | e }}</span
             >
-            <!-- FIX #1: Applied the join filter here -->
-            {#<span class="user-role"
-              >{% if current_business_owner and
+            <!-- FIX #1: UNCOMMENTED to display the business type -->
+            <span class="user-role">
+              {% if current_business_owner and
               current_business_owner.business_type %} {{
               current_business_owner.business_type | join(', ') | e }} {% else
-              %} Business Type {% endif %}</span
-            >#}
+              %} Business Type {% endif %}
+            </span>
           </div>
         </div>
         <a href="/logout" class="logout-btn">
@@ -147,7 +147,6 @@
             </button>
             <div class="quick-actions">
               {% block header_quick_actions %}
-              <!-- MODIFIED: Changed Quick Add to Settings button -->
               <a
                 href="{{ url_for('business.settings') }}"
                 class="btn btn-secondary"
@@ -173,9 +172,11 @@
             </div>
             <div class="business-details">
               <h2>{{ current_business_owner.business_name | e }}</h2>
-              <!-- FIX #2: Applied the join filter here -->
+              <!-- FIX #2: Displays the list of business types -->
               <p class="business-type">
-                {{ current_business_owner.business_type | join(', ') | e }}
+                {% if current_business_owner.business_type %} {{
+                current_business_owner.business_type | join(', ') | e }} {% else
+                %} No business type set {% endif %}
               </p>
               <p class="business-owner">
                 Owned by {{ current_business_owner.full_name | e }}
@@ -287,8 +288,7 @@
           <div class="chart-container">
             <h3>Revenue Trend</h3>
             <div class="chart-placeholder">
-              <!-- Canvas for chart removed, placeholder is now empty or can contain a message -->
-              <!-- e.g., <p>Chart data will be available soon.</p> -->
+              <p>Chart data will be available soon.</p>
             </div>
           </div>
 
@@ -314,26 +314,46 @@
 
         <!-- Quick Actions -->
         <div class="quick-actions-grid">
-          <div class="quick-action-card">
-            <i class="fas fa-plus-circle"></i>
-            <h4>Add New Service</h4>
-            <p>Create a new service offering for your clients.</p>
-          </div>
-          <div class="quick-action-card">
-            <i class="fas fa-calendar-plus"></i>
-            <h4>Set Availability</h4>
-            <p>Manage and update your business operating hours.</p>
-          </div>
-          <div class="quick-action-card">
-            <i class="fas fa-box-open"></i>
-            <h4>Add Inventory Item</h4>
-            <p>Quickly stock new products into your inventory.</p>
-          </div>
-          <div class="quick-action-card">
-            <i class="fas fa-chart-bar"></i>
-            <h4>View Reports</h4>
-            <p>Access detailed analytics and business insights.</p>
-          </div>
+          <a
+            href="{{ url_for('business.settings', _anchor='services-section') }}"
+            class="quick-action-link"
+          >
+            <div class="quick-action-card">
+              <i class="fas fa-plus-circle"></i>
+              <h4>Add New Service</h4>
+              <p>Create a new service offering for your clients.</p>
+            </div>
+          </a>
+          <a
+            href="{{ url_for('business.manage_availability') }}"
+            class="quick-action-link"
+          >
+            <div class="quick-action-card">
+              <i class="fas fa-calendar-plus"></i>
+              <h4>Set Availability</h4>
+              <p>Manage and update your business operating hours.</p>
+            </div>
+          </a>
+          <a
+            href="{{ url_for('business.inventory') }}"
+            class="quick-action-link"
+          >
+            <div class="quick-action-card">
+              <i class="fas fa-box-open"></i>
+              <h4>Add Inventory Item</h4>
+              <p>Quickly stock new products into your inventory.</p>
+            </div>
+          </a>
+          <a
+            href="{{ url_for('business.analytics') }}"
+            class="quick-action-link"
+          >
+            <div class="quick-action-card">
+              <i class="fas fa-chart-bar"></i>
+              <h4>View Reports</h4>
+              <p>Access detailed analytics and business insights.</p>
+            </div>
+          </a>
         </div>
       </section>
       {% endblock %}
@@ -435,6 +455,24 @@
       .mini-stat-value {
         font-size: 14px;
         font-weight: 600;
+      }
+
+      /* NEW CSS for Quick Action links */
+      .quick-action-link {
+        text-decoration: none;
+        color: inherit;
+        display: block; /* Makes the link take up the full space of the grid cell */
+      }
+
+      .quick-action-card {
+        /* Added a transition for a smooth hover effect */
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      }
+
+      .quick-action-link:hover .quick-action-card {
+        /* Lifts the card on hover to give feedback */
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
       }
 
       @media (max-width: 768px) {
